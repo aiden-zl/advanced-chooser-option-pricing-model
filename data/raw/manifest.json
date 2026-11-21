@@ -1,0 +1,124 @@
+{
+  "pulled_at_utc": "2026-11-21T05:16:10+00:00",
+  "window": [
+    "2018-01-01",
+    "2024-12-31"
+  ],
+  "files": {
+    "yahoo_jpm_daily.csv": 1761,
+    "yahoo_vix_daily.csv": 1761,
+    "fred_daily.csv": 2557,
+    "fred_monthly.csv": 84,
+    "av_jpm_daily_compact.csv": 100,
+    "av_jpm_monthly_adjusted.csv": 84,
+    "av_jpm_dividends.csv": 28,
+    "av_treasury_3month.csv": 1827,
+    "av_treasury_10year.csv": 1827
+  },
+  "validation": {
+    "checks": [
+      {
+        "check": "JPM row count ~1,760 trading days",
+        "passed": true,
+        "detail": "1761 rows"
+      },
+      {
+        "check": "JPM spans full window",
+        "passed": true,
+        "detail": "2018-01-02 to 2024-12-31"
+      },
+      {
+        "check": "VIX row count ~1,760 trading days",
+        "passed": true,
+        "detail": "1761 rows"
+      },
+      {
+        "check": "VIX spans full window",
+        "passed": true,
+        "detail": "2018-01-02 to 2024-12-31"
+      },
+      {
+        "check": "JPM and VIX share trading calendar",
+        "passed": true,
+        "detail": "identical date index"
+      },
+      {
+        "check": "JPM close matches paper S0 on 2021-08-23",
+        "passed": true,
+        "detail": "156.70 vs 156.7"
+      },
+      {
+        "check": "JPM prices positive, no missing closes",
+        "passed": true,
+        "detail": "min close 79.03"
+      },
+      {
+        "check": "VIX within plausible range (5-100)",
+        "passed": true,
+        "detail": "9.15 to 82.69"
+      },
+      {
+        "check": "JPM quarterly dividends present (~28)",
+        "passed": true,
+        "detail": "28 dividend days"
+      },
+      {
+        "check": "Alpha Vantage dividends agree with Yahoo count",
+        "passed": true,
+        "detail": "AV 28 vs Yahoo 28"
+      },
+      {
+        "check": "Yahoo ^VIX agrees with FRED VIXCLS on >=99.5% of days",
+        "passed": true,
+        "detail": "1759/1761 days within 0.01; max diff 0.11"
+      },
+      {
+        "check": "FRED DTB3 weekday blanks < 5% (market holidays)",
+        "passed": true,
+        "detail": "77 of 1827 weekdays"
+      },
+      {
+        "check": "FRED DGS3MO weekday blanks < 5% (market holidays)",
+        "passed": true,
+        "detail": "77 of 1827 weekdays"
+      },
+      {
+        "check": "FRED DGS6MO weekday blanks < 5% (market holidays)",
+        "passed": true,
+        "detail": "77 of 1827 weekdays"
+      },
+      {
+        "check": "FRED DGS1 weekday blanks < 5% (market holidays)",
+        "passed": true,
+        "detail": "77 of 1827 weekdays"
+      },
+      {
+        "check": "FRED DGS2 weekday blanks < 5% (market holidays)",
+        "passed": true,
+        "detail": "77 of 1827 weekdays"
+      },
+      {
+        "check": "FRED DGS10 weekday blanks < 5% (market holidays)",
+        "passed": true,
+        "detail": "77 of 1827 weekdays"
+      },
+      {
+        "check": "FRED DFF weekday blanks < 5% (market holidays)",
+        "passed": true,
+        "detail": "0 of 1827 weekdays"
+      },
+      {
+        "check": "FRED VIXCLS weekday blanks < 5% (market holidays)",
+        "passed": true,
+        "detail": "47 of 1827 weekdays"
+      },
+      {
+        "check": "FRED monthly series cover 84 months",
+        "passed": true,
+        "detail": "84 months"
+      }
+    ],
+    "passed": 20,
+    "total": 20
+  }
+}

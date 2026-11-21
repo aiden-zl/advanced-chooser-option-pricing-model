@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Week 1 Lab Report</title>
+<link rel="stylesheet" href="../assets/report.css">
+</head>
+<body>
+
+<p class="kicker">Week 1 Lab Report · Data Source Design &amp; Initial Collection</p>
+<h1>Building the Raw Dataset for JPM Chooser Option Pricing, 2018–2024</h1>
+<div class="meta"><span>Aiden Leong</span><span>Quantitative Research &amp; Trading</span><span>20 November 2026</span><span>Repo: github.com/aiden-zl/advanced-chooser-option-pricing-model</span></div>
+
+<div class="abstract">
+<b>Summary.</b> We set up connections to Yahoo Finance, FRED and Alpha Vantage, and pulled seven years
+(2018–2024) of JPM daily prices and dividends, the VIX, seven daily rate series and two monthly macro series.
+All 20 automated data-quality checks pass. From the raw data alone we reproduce the paper's stock price exactly
+($156.70) and its dividend yield to within 0.03 points (2.30% vs 2.33%). Volatility comes within 1 point
+(27.2% vs 28.2%). The paper's risk-free rate (0.15%) does not match any Treasury yield on its date. The data
+also shows why the project matters: JPM's volatility ranged from 8.8% to 135.3% (annualized, 21-day window)
+over the period, which contradicts BSM's constant-volatility assumption.
+</div>
+
+<h2>1. Objective</h2>
+<p>The Week 1 tasks from the project brief:</p>
+<ol>
+<li>Write a data requirement specification covering financial, macroeconomic and sentiment data (delivered separately as <i>Data Specification v1.0</i>).</li>
+<li>Configure and test the Yahoo Finance, Alpha Vantage and FRED APIs.</li>
+<li>Collect JPM daily prices, Treasury rates and the VIX for 2018–2024.</li>
+</ol>
+
+<h2>2. Background</h2>
+<p>Huang, Wang &amp; Wan (2021) price a one-year JPM chooser option with a Black-Scholes-Merton (BSM) Monte-Carlo
+simulation. The holder chooses call or put at T<sub>1</sub> = 0.5 years, and the option expires at T<sub>2</sub> = 1 year with strike K = $150.
+Their inputs are fixed numbers: S<sub>0</sub> = $156.70, σ = 28.2%, r = 0.15% and q = 2.33%. To rebuild and later extend that model with
+machine learning, we first need a reproducible dataset from which these inputs, and richer time-varying features,
+can be derived.</p>
+
+<h2>3. Methods</h2>
+<h3>3.1 Environment</h3>
+<p>Python 3.14 in a virtual environment, with pandas 3.1, numpy 2.5, yfinance 1.8, fredapi 0.5, requests 2.34 and matplotlib 3.11 (minimum versions are pinned in <code>requirements.txt</code>).
+API keys are stored in a gitignored <code>.env</code> file, because the repository is public.</p>
+
+<h3>3.2 Connection scripts</h3>
+<table>
+<thead><tr><th style="width:30%">Module</th><th>What the live connection test does</th></tr></thead>
+<tbody>
+<tr><td><code>src/data_sources/yahoo.py</code></td><td>Downloads JPM for 20–24 Aug 2021 and asserts that the close on 23 Aug equals the paper's $156.70.</td></tr>
+<tr><td><code>src/data_sources/fred.py</code></td><td>Downloads the 1-year Treasury yield (<code>DGS1</code>) around the same date.</td></tr>
+<tr><td><code>src/data_sources/alpha_vantage.py</code></td><td>Makes one uncached <code>GLOBAL_QUOTE</code> call for JPM. It detects Alpha Vantage's "HTTP 200 with an error message" responses, rate-limits calls to about one every 1.5 s, and caches responses on disk to save the 25-calls/day quota.</td></tr>
+<tr><td><code>src/pull_all.py</code></td><td>Runs all three tests, pulls every dataset, runs the validation suite and writes <code>data/raw/manifest.json</code>.</td></tr>
+</tbody>
+</table>
+
+<h3>3.3 Design decisions</h3>
+<ul>
+<li><b>Unadjusted and adjusted prices.</b> We pulled with <code>auto_adjust=False</code>. The paper's S<sub>0</sub> is the unadjusted close; the adjusted close (dividends reinvested) is about $19 lower on the same day and would misstate S<sub>0</sub>.</li>
+<li><b>Inclusive end date.</b> <code>yfinance</code> treats <code>end</code> as exclusive, so the code adds one day to keep 31 Dec 2024.</li>
+<li><b>No cleaning at this stage.</b> Holiday blanks in the FRED series are kept. Interpolation and outlier handling happen in Week 2, so every change stays traceable.</li>
+<li><b>Alpha Vantage as a cross-check.</b> On the free key, full daily history and news sentiment are premium features (confirmed by the API's responses). Yahoo is therefore the primary price source, and Alpha Vantage independently verifies the dividends, month-end prices and Treasury yields.</li>
+</ul>
+
+<h2>4. Results</h2>
+<h3>4.1 Connection tests</h3>
+<pre>[yahoo] OK  JPM close on 2021-08-23 = 156.70 (paper: 156.7)
+[fred]  OK  DGS1 on 2021-08-23 = 0.07%  (10 obs)
+[alpha] OK  JPM latest trading day 2026-11-20, price 310.53</pre>
+
+<h3>4.2 Raw dataset</h3>
+<table>
+<thead><tr><th>File</th><th>Content</th><th class="num">Rows</th></tr></thead>
+<tbody>
+<tr><td><code>yahoo_jpm_daily.csv</code></td><td>JPM OHLC, adjusted close, volume, dividends, splits</td><td class="num">1,761</td></tr>
+<tr><td><code>yahoo_vix_daily.csv</code></td><td>VIX daily bars</td><td class="num">1,761</td></tr>
+<tr><td><code>fred_daily.csv</code></td><td>DTB3, DGS3MO, DGS6MO, DGS1, DGS2, DGS10, DFF, VIXCLS</td><td class="num">2,557</td></tr>
+<tr><td><code>fred_monthly.csv</code></td><td>CPIAUCSL, UNRATE</td><td class="num">84</td></tr>
+<tr><td><code>av_jpm_dividends.csv</code></td><td>Dividend history (cross-check)</td><td class="num">28</td></tr>
+<tr><td><code>av_jpm_monthly_adjusted.csv</code></td><td>Month-end prices (cross-check)</td><td class="num">84</td></tr>
+<tr><td><code>av_treasury_3month.csv</code> / <code>_10year.csv</code></td><td>Daily Treasury yields (second source)</td><td class="num">1,827 each</td></tr>
+<tr><td><code>av_jpm_daily_compact.csv</code></td><td>Most recent 100 trading days (free-tier cap)</td><td class="num">100</td></tr>
+</tbody>
+</table>
+
+<h3>4.3 Data-quality validation: 20 of 20 checks pass</h3>
+<p>The checks cover row counts and date coverage, a shared trading calendar for JPM and VIX, the paper anchor price, price ranges,
+dividend counts in both sources, agreement between Yahoo and FRED on VIX, and completeness of every FRED series. Eight checks failed on the first run. The causes were that FRED's fed funds series (<code>DFF</code>) is published every calendar day, which adds weekend rows to the combined table, and that the VIX tolerance was
+stricter than the two sources' actual differences. The data was correct both times, so we changed the checks to judge each series on weekdays only and
+to require VIX agreement on at least 99.5% of days. After the fix, Treasury series are blank on 77 of 1,827 weekdays (4.2%, bond-market holidays), and the two VIX sources
+agree to within 0.01 on 1,759 of 1,761 days.</p>
+
+<h3>4.4 Re-deriving the paper's inputs from raw data</h3>
+<table>
+<thead><tr><th>Input on 23 Aug 2021</th><th class="num">Paper</th><th class="num">From our data</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td>S<sub>0</sub>: JPM close</td><td class="num">$156.70</td><td class="num">$156.70</td><td><span class="pass">Exact</span></td></tr>
+<tr><td>q: trailing 12-month dividends ÷ S<sub>0</sub></td><td class="num">2.33%</td><td class="num">2.30%</td><td><span class="pass">Within 0.03 pt</span></td></tr>
+<tr><td>σ: 1-year historical volatility</td><td class="num">28.2%</td><td class="num">27.2%</td><td><span class="warn">1.0 pt lower</span></td></tr>
+<tr><td>r: 1-year Treasury (<code>DGS1</code>)</td><td class="num">0.15%</td><td class="num">0.07%</td><td><span class="warn">No tenor matches</span></td></tr>
+</tbody>
+</table>
+<p>To explain the σ gap we recomputed volatility under 272 combinations of convention: log or simple returns, adjusted or unadjusted prices,
+sample or population standard deviation, annualization by 250, 252 or 365 days, eleven window start dates, and weekly or monthly sampling.
+The closest result is 27.7%, and no combination gives 28.2%. Because S<sub>0</sub> matches to the cent, the price data itself is not the cause; the gap
+most likely comes from a calculation step the paper does not describe. For r, every Treasury yield on that date (0.05% to 0.23%) differs from 0.15%. One hypothesis is
+6-month USD LIBOR, whose tenor matches T<sub>1</sub>; it is unverified because FRED no longer hosts LIBOR. Week 3 will price the option with both the paper's inputs and
+our data-derived inputs to measure how much these gaps move the price.</p>
+
+<h3>4.5 Exploratory figures</h3>
+<figure><img src="figures/fig1_jpm_price.png" alt="JPM daily unadjusted and adjusted close 2018-2024">
+<figcaption><b>Figure 1.</b> JPM rose from $107.95 to $239.71 over the window (unadjusted close). It fell to its low of $79.03 on 23 Mar 2020 during the COVID-19 crash and reached its high of $250.29 on 25 Nov 2024. The marker shows the paper's valuation date and S<sub>0</sub>.</figcaption></figure>
+
+<figure><img src="figures/fig4_volatility.png" alt="JPM 21-day and 252-day realized volatility vs VIX">
+<figcaption><b>Figure 2.</b> Volatility is not constant. JPM's 21-day realized volatility ranged from 8.8% to 135.3%, and annual realized volatility was 54.3% in 2020 against 18.8%–30.0% in other years. Daily JPM returns and daily VIX changes have a correlation of −0.57. These are the regime shifts the Week 5–6 ML volatility models must capture, and the paper's single σ = 28.2% cannot.</figcaption></figure>
+
+<figure><img src="figures/fig2_vix.png" alt="VIX daily close 2018-2024">
+<figcaption><b>Figure 3.</b> The VIX had a median of 18.0 and peaked at 82.7 on 16 Mar 2020. Other spikes above 35 occur in Feb 2018 (37.3), Dec 2018 (36.1) and Aug 2024 (38.6); the Mar 2023 regional-bank stress shows only a modest rise, to 26.5.</figcaption></figure>
+
+<figure><img src="figures/fig3_rates.png" alt="US Treasury yields and fed funds rate 2018-2024">
+<figcaption><b>Figure 4.</b> Rates moved through three regimes: about 1.5%–2.5% (2018–19), near zero (Mar 2020 – early 2022), then above 5% after the 2022–23 hiking cycle. The paper's valuation date falls in the near-zero regime, so r carries little weight there; with 2023–24 rates, r becomes a much larger input.</figcaption></figure>
+
+<figure><img src="figures/fig5_dividends.png" alt="JPM quarterly dividends per share">
+<figcaption><b>Figure 5.</b> JPM paid 28 quarterly dividends, rising from $0.56 to $1.25 per share. Yahoo and Alpha Vantage agree on all 28 ex-dates. The rising dividend means q should be time-varying rather than fixed, which feeds the Week 2 "dividend growth" feature.</figcaption></figure>
+
+<h2>5. Discussion</h2>
+<ul>
+<li><b>The data supports the project's premise.</b> Volatility and rates both changed regime several times within the window, so a model with constant σ and r will misprice systematically across regimes. That is the gap the later ML weeks target.</li>
+<li><b>Limitations of the sources.</b> Yahoo is an unofficial, free source and can revise its history; we mitigate this by cross-checking against FRED and Alpha Vantage and by committing the raw files with a dated manifest. Alpha Vantage's free tier cannot provide full daily history or news sentiment.</li>
+<li><b>Risks for later weeks.</b> (1) Historical option prices for the Week 4 error metrics: JPM options trade on US equity options exchanges, not CME, and 2018–2024 history is a paid product. (2) Historical sentiment: NewsAPI's free tier covers only the last 30 days. The data specification (§5–6) lists alternatives and the decisions needed.</li>
+</ul>
+
+<h2>6. Conclusion and next steps</h2>
+<p>All three Week 1 deliverables are complete: the data specification, working connection scripts for three APIs, and a validated 2018–2024 raw dataset.
+Week 2 will clean and align the data (interpolation, IQR outlier checks, joining everything to the NYSE calendar) and build at least 10 features (rolling volatilities, returns,
+dividend growth, the VIX–JPM correlation, interest-rate momentum and sentiment), with GitHub Actions scheduling the pipeline.</p>
+
+<h2>Appendix: Reproducing this week's results</h2>
+<pre>git clone https://github.com/aiden-zl/advanced-chooser-option-pricing-model
+cd advanced-chooser-option-pricing-model
+python3 -m venv .venv &amp;&amp; source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env          # then add your FRED and Alpha Vantage keys
+python -m src.pull_all        # connection tests, raw pull, 20 validation checks
+python -m src.week1_figures   # figures and deliverables/week1/week1_stats.json</pre>
+
+<p class="small">References: Huang, Z., Wang, X. &amp; Wan, W. (2021). Exploration of JPMorgan Chooser Option Pricing. <i>BCP Business &amp; Management</i>, 15, 93–102.</p>
+</body>
+</html>

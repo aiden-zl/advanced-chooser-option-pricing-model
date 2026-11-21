@@ -1,0 +1,42 @@
+/* Shared print stylesheet for weekly PDF deliverables (rendered with headless Chrome). */
+@page { size: Letter; margin: 0.8in 0.85in 0.85in; }
+:root {
+  --ink: #0b0b0b; --ink-2: #52514e; --rule: #d9d8d3; --accent: #2a78d6;
+  --tint: #f4f3ef; --pass: #0f7a3d; --warn: #9a5b00;
+}
+html { background: #fff; }
+body {
+  font-family: "Charter", "Georgia", "Times New Roman", serif;
+  font-size: 10.5pt; line-height: 1.45; color: var(--ink); background: #fff; margin: 0;
+}
+h1, h2, h3, .meta, table, figcaption, .callout, code, .kicker {
+  font-family: -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+.kicker { font-size: 9pt; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); font-weight: 700; margin: 0 0 4pt; }
+h1 { font-size: 20pt; line-height: 1.15; margin: 0 0 6pt; }
+.meta { font-size: 9pt; color: var(--ink-2); border-bottom: 1.5pt solid var(--ink); padding-bottom: 8pt; margin-bottom: 14pt; }
+.meta span + span::before { content: "  ·  "; }
+h2 { font-size: 13pt; margin: 18pt 0 6pt; padding-top: 4pt; border-top: 0.5pt solid var(--rule); break-after: avoid; }
+h3 { font-size: 10.5pt; margin: 12pt 0 4pt; break-after: avoid; }
+p { margin: 0 0 7pt; }
+ul, ol { margin: 0 0 8pt; padding-left: 18pt; }
+li { margin-bottom: 2pt; }
+code { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 8.6pt; background: var(--tint); padding: 0 2.5pt; border-radius: 2pt; }
+pre { font-family: "SF Mono", Menlo, monospace; font-size: 8.4pt; background: var(--tint); padding: 7pt 9pt; border-radius: 3pt; white-space: pre-wrap; break-inside: avoid; }
+table { width: 100%; border-collapse: collapse; font-size: 8.6pt; margin: 4pt 0 10pt; break-inside: auto; }
+thead { display: table-header-group; }
+tr { break-inside: avoid; }
+th { text-align: left; font-weight: 700; border-bottom: 1pt solid var(--ink); padding: 3pt 5pt; vertical-align: bottom; }
+td { border-bottom: 0.5pt solid var(--rule); padding: 3pt 5pt; vertical-align: top; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.pass { color: var(--pass); font-weight: 700; }
+.warn { color: var(--warn); font-weight: 700; }
+figure { margin: 8pt 0 12pt; break-inside: avoid; }
+figure img { width: 100%; display: block; }
+figcaption { font-size: 8.6pt; color: var(--ink-2); margin-top: 3pt; }
+figcaption b { color: var(--ink); }
+.callout { background: var(--tint); border-left: 3pt solid var(--accent); padding: 6pt 9pt; font-size: 9pt; margin: 8pt 0 10pt; break-inside: avoid; }
+.callout.warn { border-left-color: #eda100; }
+.abstract { font-size: 10pt; background: var(--tint); padding: 8pt 11pt; margin-bottom: 10pt; }
+.small { font-size: 8.6pt; color: var(--ink-2); }
+.pagebreak { break-before: page; }

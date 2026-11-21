@@ -1,0 +1,79 @@
+{
+  "paper_parameter_check": {
+    "S0": {
+      "paper": 156.7,
+      "data": 156.7
+    },
+    "sigma_1y_hist": {
+      "paper": 0.282,
+      "data": 0.2722,
+      "n_returns": 252
+    },
+    "dividend_yield_trailing_12m": {
+      "paper": 0.0233,
+      "data": 0.023,
+      "dividends_sum": 3.6
+    },
+    "risk_free_rate_pct": {
+      "paper": 0.15,
+      "data": {
+        "DTB3": 0.05,
+        "DGS3MO": 0.05,
+        "DGS6MO": 0.06,
+        "DGS1": 0.07
+      }
+    }
+  },
+  "summary": {
+    "jpm_close": {
+      "start": 107.95,
+      "end": 239.71,
+      "min": 79.03,
+      "min_date": "2020-03-23",
+      "max": 250.29,
+      "max_date": "2024-11-25"
+    },
+    "jpm_daily_log_return": {
+      "mean_annualized": 0.1142,
+      "vol_annualized": 0.2957,
+      "worst_day": -0.1621,
+      "worst_day_date": "2020-03-16",
+      "best_day": 0.1656,
+      "best_day_date": "2020-03-13"
+    },
+    "jpm_vol_by_year": {
+      "2018": 0.2211,
+      "2019": 0.188,
+      "2020": 0.5427,
+      "2021": 0.2131,
+      "2022": 0.2998,
+      "2023": 0.2079,
+      "2024": 0.2331
+    },
+    "vix": {
+      "median": 18.04,
+      "max": 82.69,
+      "max_date": "2020-03-16",
+      "min": 9.15
+    },
+    "rates_range_pct": {
+      "DTB3": [
+        -0.05,
+        5.36
+      ],
+      "DGS1": [
+        0.04,
+        5.49
+      ],
+      "DGS10": [
+        0.52,
+        4.98
+      ],
+      "DFF": [
+        0.04,
+        5.33
+      ]
+    },
+    "corr_jpm_ret_vs_vix_change": -0.569
+  }
+}

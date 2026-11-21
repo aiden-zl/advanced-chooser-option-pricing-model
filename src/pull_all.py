@@ -48,8 +48,37 @@ def validate() -> dict:
 
     n_div = int((jpm["dividends"] > 0).sum())
     add("JPM quarterly dividends present (~28)", 26 <= n_div <= 29, f"{n_div} dividend days")
-    av_div = len(avd)
-    add("Alpha Vantage dividends agree with Yahoo count", abs(av_div - n_div) <= 1, f"AV {av_div} vs Yahoo {n_div}")
+    y_div = jpm.loc[jpm["dividends"] > 0, "dividends"]
+    same_dates = y_div.index.equals(avd.index)
+    amt_diff = float((y_div - avd["amount"]).abs().max()) if same_dates else float("nan")
+    add(
+        "Alpha Vantage dividends match Yahoo (ex-dates and amounts)",
+        same_dates and amt_diff < 0.005,
+        f"{len(avd)} AV vs {len(y_div)} Yahoo; dates identical={same_dates}; max amount diff ${amt_diff:.3f}",
+    )
+
+    # Alpha Vantage month-end close vs Yahoo unadjusted close on the same dates
+    avm = pd.read_csv(RAW_DIR / "av_jpm_monthly_adjusted.csv", index_col="date", parse_dates=True)
+    common_m = avm.index.intersection(jpm.index)
+    mdiff = (avm.loc[common_m, "close"] - jpm.loc[common_m, "close"]).abs()
+    add(
+        "Alpha Vantage month-end close matches Yahoo close",
+        len(common_m) == len(avm) and float(mdiff.max()) < 0.02,
+        f"{len(common_m)}/{len(avm)} month-ends found in Yahoo; max diff ${mdiff.max():.3f}",
+    )
+
+    # Alpha Vantage Treasury yields vs FRED constant-maturity series
+    for av_name, sid in (("av_treasury_3month.csv", "DGS3MO"), ("av_treasury_10year.csv", "DGS10")):
+        av = pd.read_csv(RAW_DIR / av_name, index_col="date", parse_dates=True)["value"].dropna()
+        fr = fd[sid].dropna()
+        both = av.index.intersection(fr.index)
+        d = (av.loc[both] - fr.loc[both]).abs()
+        share = float((d <= 0.005).mean())
+        add(
+            f"Alpha Vantage {sid} matches FRED on >=99% of days",
+            share >= 0.99,
+            f"{(d <= 0.005).sum()}/{len(both)} days within 0.005 pt; max diff {d.max():.2f}",
+        )
 
     common = vix.index.intersection(fd["VIXCLS"].dropna().index)
     diff = (vix.loc[common, "close"] - fd.loc[common, "VIXCLS"]).abs()

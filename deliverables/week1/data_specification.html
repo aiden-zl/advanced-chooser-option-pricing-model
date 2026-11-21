@@ -36,12 +36,12 @@ collected in later weeks.
 
 <h2>2. Source inventory</h2>
 <table>
-<thead><tr><th style="width:17%">Source</th><th style="width:15%">Access</th><th style="width:30%">Free-tier limits (verified 20 Nov 2026)</th><th>Role in project</th></tr></thead>
+<thead><tr><th style="width:17%">Source</th><th style="width:15%">Access</th><th style="width:30%">Free-tier limits (<b>✓</b> = observed in our own API responses, 20 Nov 2026)</th><th>Role in project</th></tr></thead>
 <tbody>
-<tr><td><b>Yahoo Finance</b><br><span class="small">via <code>yfinance</code> 1.8</span></td><td>No key; unofficial API</td><td>No published quota; data can be revised without notice; not an official vendor feed.</td><td>Primary source for JPM daily prices, dividends and the VIX close.</td></tr>
-<tr><td><b>FRED</b><br><span class="small">St. Louis Fed, via <code>fredapi</code></span></td><td>Free API key</td><td>Generous limits; official source for US rates and macro data.</td><td>Risk-free rate candidates, policy rate, VIX cross-check, macro series.</td></tr>
-<tr><td><b>Alpha Vantage</b><br><span class="small">REST API</span></td><td>Free API key</td><td>~25 requests/day, max ~1/second. <b>Premium-only on the free key:</b> full daily price history (<code>outputsize=full</code>) and <code>NEWS_SENTIMENT</code>. Errors are returned as HTTP 200 with an <code>Information</code> message.</td><td>Independent cross-check of dividends and monthly prices; second source for Treasury yields; latest quote for the connection test.</td></tr>
-<tr><td><b>Sentiment</b> (Planned)</td><td>see §5</td><td>NewsAPI free tier: last 30 days only. Alpha Vantage news: premium.</td><td>Sentiment score feature (0–1) in Week 2.</td></tr>
+<tr><td><b>Yahoo Finance</b><br><span class="small">via <code>yfinance</code> 1.8</span></td><td>No key; unofficial API</td><td>Unofficial, with no published quota; history can be revised without notice.</td><td>Primary source for JPM daily prices, dividends and the VIX close.</td></tr>
+<tr><td><b>FRED</b><br><span class="small">St. Louis Fed, via <code>fredapi</code></span></td><td>Free API key</td><td>Official source for US rates and macro data; no limits were hit in this project.</td><td>Risk-free rate candidates, policy rate, VIX cross-check, macro series.</td></tr>
+<tr><td><b>Alpha Vantage</b><br><span class="small">REST API</span></td><td>Free API key</td><td>✓ Max ~1 request/second. ✓ <b>Premium-only on the free key:</b> full daily price history (<code>outputsize=full</code>) and <code>NEWS_SENTIMENT</code>. ✓ Errors come back as HTTP 200 with an <code>Information</code> message. Daily quota of ~25 requests per provider documentation (not tested).</td><td>Independent cross-check of dividends and monthly prices; second source for Treasury yields; latest quote for the connection test.</td></tr>
+<tr><td><b>Sentiment</b> (Planned)</td><td>see §5</td><td>NewsAPI free tier: about the last 30 days, per provider documentation. ✓ Alpha Vantage news: premium.</td><td>Sentiment score feature (0–1) in Week 2.</td></tr>
 <tr><td><b>Option prices</b> (Planned)</td><td>see §6</td><td>No free source with 2018–2024 JPM option history identified yet.</td><td>Market prices for the Week 4 error metrics (MAE, RMSE).</td></tr>
 </tbody>
 </table>
@@ -86,9 +86,9 @@ collected in later weeks.
 <table>
 <thead><tr><th>File</th><th>Endpoint</th><th class="num">Rows</th><th>Purpose</th></tr></thead>
 <tbody>
-<tr><td><code>av_jpm_dividends.csv</code></td><td><code>DIVIDENDS</code></td><td class="num">28</td><td>Independent dividend record; matches Yahoo's 28 ex-dates</td></tr>
-<tr><td><code>av_jpm_monthly_adjusted.csv</code></td><td><code>TIME_SERIES_MONTHLY_ADJUSTED</code></td><td class="num">84</td><td>Month-end prices, a second source for JPM</td></tr>
-<tr><td><code>av_treasury_3month.csv</code>, <code>av_treasury_10year.csv</code></td><td><code>TREASURY_YIELD</code> (daily)</td><td class="num">1,827</td><td>Second source for Treasury yields</td></tr>
+<tr><td><code>av_jpm_dividends.csv</code></td><td><code>DIVIDENDS</code></td><td class="num">28</td><td>Independent dividend record; identical ex-dates and amounts to Yahoo (validated)</td></tr>
+<tr><td><code>av_jpm_monthly_adjusted.csv</code></td><td><code>TIME_SERIES_MONTHLY_ADJUSTED</code></td><td class="num">84</td><td>Month-end prices; identical to Yahoo's unadjusted close on all 84 dates (validated)</td></tr>
+<tr><td><code>av_treasury_3month.csv</code>, <code>av_treasury_10year.csv</code></td><td><code>TREASURY_YIELD</code> (daily)</td><td class="num">1,827</td><td>Second source for Treasury yields; identical to FRED <code>DGS3MO</code> / <code>DGS10</code> on all 1,750 shared days (validated)</td></tr>
 <tr><td><code>av_jpm_daily_compact.csv</code></td><td><code>TIME_SERIES_DAILY</code> (compact)</td><td class="num">100</td><td>Most recent 100 trading days only (free-tier cap); proves the daily endpoint works</td></tr>
 </tbody>
 </table>
@@ -108,7 +108,7 @@ collected in later weeks.
 </tbody>
 </table>
 <div class="callout">
-<b>Reproducibility notes.</b> S<sub>0</sub> matches exactly. σ comes out between 26.8% and 27.7% under standard 252-day conventions (log or simple returns, adjusted or unadjusted prices, windows starting 1 Jul – 1 Sep 2020). None of the 272 conventions we tested gives 28.2% (see the Week 1 lab report, §4.4). The paper's r = 0.15% matches no single Treasury tenor on that date: it lies between the 1-year (0.07%) and 2-year (0.23%) yields. Week 3 will run the model with both the paper's values and our data-derived values and report the difference.
+<b>Reproducibility notes.</b> S<sub>0</sub> matches exactly. With 252-day annualization and a one-year window, σ comes out between 26.8% and 27.7% (log or simple returns, adjusted or unadjusted prices, sample or population standard deviation, window starts 1 Jul – 1 Sep 2020). None of the 272 conventions we tested gives 28.2% (see the Week 1 lab report, §4.4). The paper's r = 0.15% matches no single Treasury tenor on that date: it lies between the 1-year (0.07%) and 2-year (0.23%) yields. Week 3 will run the model with both the paper's values and our data-derived values and report the difference.
 </div>
 
 <h2>5. Sentiment data: scope (Planned, Week 2)</h2>
@@ -139,14 +139,16 @@ collected in later weeks.
 <li><b>Secrets.</b> API keys live only in a local <code>.env</code> file (gitignored; the repository is public). <code>.env.example</code> documents the variable names.</li>
 </ul>
 
-<h2>8. Data-quality checks (run on every pull)</h2>
+<h2>8. Data-quality checks (23 checks, run on every pull)</h2>
 <table>
 <thead><tr><th>Check</th><th>Rule</th><th>Week 1 result</th></tr></thead>
 <tbody>
 <tr><td>Coverage</td><td>JPM and VIX have 1,700–1,800 rows spanning the full window, with identical trading calendars</td><td><span class="pass">PASS</span> 1,761 rows each</td></tr>
 <tr><td>Anchor to paper</td><td>JPM close on 2021-08-23 within $0.05 of $156.70</td><td><span class="pass">PASS</span> $156.70</td></tr>
 <tr><td>Price sanity</td><td>All JPM closes positive and present; VIX between 5 and 100</td><td><span class="pass">PASS</span> VIX 9.15–82.69</td></tr>
-<tr><td>Dividends</td><td>26–29 quarterly payments; Alpha Vantage count within 1 of Yahoo's</td><td><span class="pass">PASS</span> 28 / 28</td></tr>
+<tr><td>Dividends</td><td>26–29 quarterly payments; Alpha Vantage ex-dates and amounts identical to Yahoo's</td><td><span class="pass">PASS</span> 28 / 28, max diff $0.000</td></tr>
+<tr><td>Cross-source prices</td><td>Alpha Vantage month-end close within $0.02 of Yahoo's close</td><td><span class="pass">PASS</span> 84 / 84, max diff $0.000</td></tr>
+<tr><td>Cross-source yields</td><td>Alpha Vantage 3-month and 10-year yields within 0.005 pt of FRED on ≥ 99% of days</td><td><span class="pass">PASS</span> 1,750 / 1,750 each</td></tr>
 <tr><td>Cross-source VIX</td><td>Yahoo ^VIX within 0.01 of FRED VIXCLS on ≥ 99.5% of days</td><td><span class="pass">PASS</span> 99.9%</td></tr>
 <tr><td>Rate completeness</td><td>Each FRED daily series blank on &lt; 5% of weekdays (blanks are market holidays)</td><td><span class="pass">PASS</span> 77 of 1,827 weekdays (4.2%)</td></tr>
 <tr><td>Macro completeness</td><td>84 monthly observations</td><td><span class="pass">PASS</span> 84</td></tr>
@@ -160,6 +162,6 @@ collected in later weeks.
 <li>Risk-free tenor convention: <code>DGS1</code> (matches T<sub>2</sub>) by default; Week 3 runs a sensitivity check against the paper's 0.15%.</li>
 </ol>
 
-<p class="small" style="margin-top:14pt">References: Huang, Z., Wang, X. &amp; Wan, W. (2021). Exploration of JPMorgan Chooser Option Pricing. <i>BCP Business &amp; Management</i>, 15, 93–102. Rubinstein, M. (1991). Options for the undecided. <i>Risk</i>, 4(4).</p>
+<p class="small" style="margin-top:14pt">References: Huang, Z., Wang, X. &amp; Wan, W. (2021). Exploration of JPMorgan Chooser Option Pricing. <i>BCP Business &amp; Management</i>, 15, 93–102. Rubinstein, M. (1991). <i>Chooser Options</i> (as cited in the project brief).</p>
 </body>
 </html>

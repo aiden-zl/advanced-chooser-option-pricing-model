@@ -21,7 +21,7 @@ Each week ships source code (in this repo), figures and a PDF lab report under `
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env            # add free FRED and Alpha Vantage API keys
-python -m src.pull_all          # test APIs, pull 2018-2024 raw data, run 20 validation checks
+python -m src.pull_all          # test APIs, pull 2018-2024 raw data, run 23 validation checks
 python -m src.week1_figures     # Week 1 figures and summary stats
 python -m src.build_pdf deliverables/week1/lab_report.html   # rebuild a PDF (needs Google Chrome)
 ```

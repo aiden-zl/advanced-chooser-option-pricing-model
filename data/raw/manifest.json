@@ -1,5 +1,5 @@
 {
-  "pulled_at_utc": "2026-11-21T05:16:10+00:00",
+  "pulled_at_utc": "2026-11-21T05:18:17+00:00",
   "window": [
     "2018-01-01",
     "2024-12-31"
@@ -63,9 +63,24 @@
         "detail": "28 dividend days"
       },
       {
-        "check": "Alpha Vantage dividends agree with Yahoo count",
+        "check": "Alpha Vantage dividends match Yahoo (ex-dates and amounts)",
         "passed": true,
-        "detail": "AV 28 vs Yahoo 28"
+        "detail": "28 AV vs 28 Yahoo; dates identical=True; max amount diff $0.000"
+      },
+      {
+        "check": "Alpha Vantage month-end close matches Yahoo close",
+        "passed": true,
+        "detail": "84/84 month-ends found in Yahoo; max diff $0.000"
+      },
+      {
+        "check": "Alpha Vantage DGS3MO matches FRED on >=99% of days",
+        "passed": true,
+        "detail": "1750/1750 days within 0.005 pt; max diff 0.00"
+      },
+      {
+        "check": "Alpha Vantage DGS10 matches FRED on >=99% of days",
+        "passed": true,
+        "detail": "1750/1750 days within 0.005 pt; max diff 0.00"
       },
       {
         "check": "Yahoo ^VIX agrees with FRED VIXCLS on >=99.5% of days",
@@ -118,7 +133,7 @@
         "detail": "84 months"
       }
     ],
-    "passed": 20,
-    "total": 20
+    "passed": 23,
+    "total": 23
   }
 }

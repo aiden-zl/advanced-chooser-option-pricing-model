@@ -123,7 +123,6 @@ def fig_vol(jpm, vix):
     fig, ax = plt.subplots(figsize=(8, 3.6))
     ax.plot(rv21.index, rv21, color=C[0], lw=1.0, label="JPM 21-day realized vol")
     ax.plot(rv252.index, rv252, color=C[1], lw=1.6, label="JPM 252-day realized vol")
-    ax.plot(vix.index, vix["close"], color=C[2], lw=1.0, label="VIX (S&P 500 implied vol)")
     _shade(ax)
     t = pd.Timestamp(PAPER_ANCHOR_DATE)
     ax.scatter([t], [PAPER_PARAMS["sigma"] * 100], s=36, color=INK, zorder=5)
@@ -131,7 +130,7 @@ def fig_vol(jpm, vix):
                 xytext=(30, 55), textcoords="offset points", fontsize=8, color=INK,
                 bbox=dict(facecolor="white", edgecolor="none", pad=1),
                 arrowprops=dict(arrowstyle="-", color=INK2, lw=0.8))
-    ax.set_title("Volatility is not constant: JPM realized volatility vs VIX")
+    ax.set_title("JPM realized volatility: 1-month and 1-year rolling windows")
     ax.set_ylabel("Annualized volatility, %")
     ax.set_ylim(0, float(rv21.max()) * 1.05)
     ax.legend(loc="upper right")

@@ -1,0 +1,271 @@
+\documentclass[11pt]{article}
+
+% ---------- Packages ----------
+\usepackage[letterpaper,margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{newtxtext,newtxmath}
+\usepackage{microtype}
+\usepackage{amsmath}
+\usepackage{booktabs,tabularx,array}
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+
+\setlist{itemsep=2pt, topsep=4pt}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\newcommand{\code}[1]{\texttt{#1}}
+\renewcommand{\arraystretch}{1.15}
+
+% ---------- Title ----------
+\title{\textbf{Data Specification: Chooser Option Pricing with Real-World Data}\\[4pt]
+\large Week 1 Deliverable: Data Requirement Specification (v1.0)}
+\author{Aiden Leong\\[2pt]
+\small Goldman Sachs Online Internship, Quantitative Research \& Trading\\
+\small Supervisor: Tyler Chan\\
+\small \url{https://github.com/aiden-zl/advanced-chooser-option-pricing-model}}
+\date{20 November 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+This document defines the data the project collects, where each item comes from, how it is stored, and how it maps
+onto the inputs of the Black--Scholes--Merton (BSM) chooser option model of Huang, Wang \& Wan~\cite{huang2021}.
+It covers the three data families required by the project brief (financial, macroeconomic and sentiment) plus the
+option-price data needed for Week~4 benchmarking. Items marked \emph{Collected} are in the Week~1 raw dataset;
+items marked \emph{Planned} are scoped here and collected in later weeks.
+\end{abstract}
+
+% =====================================================================
+\section{Scope and conventions}
+\begin{table}[H]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.22\linewidth}L@{}}
+\toprule
+Item & Specification \\
+\midrule
+Underlying asset & JPMorgan Chase \& Co.\ common stock, ticker \code{JPM} (NYSE) \\
+Study window & 2018-01-01 to 2024-12-31 inclusive (7 calendar years; 1,761 NYSE trading days) \\
+Primary frequency & Daily, end of day. Monthly macro series are kept at their native frequency and aligned in Week~2. \\
+Calendar & NYSE trading days define the master calendar. Rates follow the US bond-market calendar, so they are blank on a few days when stocks trade (e.g.\ Columbus Day, Veterans Day). \\
+Units & Prices in USD per share; rates and yields in percent per year as published (converted to decimals at model time); VIX in index points. \\
+Raw-data rule & Raw files are saved exactly as received: no filling, interpolation or outlier removal. Cleaning is a Week~2 task, so every transformation stays traceable. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% =====================================================================
+\section{Source inventory}
+Limits marked \textbf{(observed)} were seen in my own API responses on 20 November 2026; the others are taken from
+the providers' documentation.
+
+\begin{table}[H]
+\centering\small
+\caption{Data sources, access, limits and role.}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.17\linewidth}>{\raggedright\arraybackslash}p{0.13\linewidth}LL@{}}
+\toprule
+Source & Access & Free-tier limits & Role in project \\
+\midrule
+Yahoo Finance (\code{yfinance}~1.8) & No key; unofficial API & No published quota; history can be revised without notice. & Primary source for JPM daily prices, dividends and the VIX close. \\
+FRED (St.~Louis Fed, \code{fredapi}) & Free API key & Official source for US rates and macro data; no limits were hit in this project. & Risk-free rate candidates, policy rate, VIX cross-check, macro series. \\
+Alpha Vantage (REST API) & Free API key & About 1 request per second (observed). Full daily price history and \code{NEWS\_SENTIMENT} are premium-only (observed). Errors return HTTP 200 with an \code{Information} message (observed). About 25 requests per day (documented). & Cross-check of dividends, month-end prices and Treasury yields; latest quote for the connection test. \\
+Sentiment (Planned) & See \S\ref{sec:sentiment} & NewsAPI free plan: articles up to one month old, development use only (documented). & Sentiment score feature in Week~2. \\
+Option prices (Planned) & See \S\ref{sec:options} & No free source of 2018--2024 JPM option history identified. & Market prices for the Week~4 error metrics (MAE, RMSE). \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% =====================================================================
+\section{Data dictionary: collected in Week 1}
+
+\subsection{Financial data: JPM equity (Yahoo Finance)}
+File \code{data/raw/yahoo\_jpm\_daily.csv}, 1,761 rows, one per trading day. Pulled with \code{auto\_adjust=False},
+so both the unadjusted close (the paper's $S_0$) and the split- and dividend-adjusted close are kept.
+
+\begin{table}[H]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}>{\ttfamily}>{\raggedright\arraybackslash}p{0.2\linewidth}>{\raggedright\arraybackslash}p{0.12\linewidth}LL@{}}
+\toprule
+\normalfont Field & Type & Description & Model use \\
+\midrule
+date & date & Trading date & Index \\
+open, high, low, close & float, USD & Unadjusted daily prices & \code{close} gives $S_0$; high/low support range-based volatility estimators (Week~2) \\
+adj\_close & float, USD & Close adjusted for splits and dividends & Total-return analysis; not used for $S_0$ \\
+volume & int, shares & Shares traded & Liquidity feature \\
+dividends & float, USD & Cash dividend on the ex-dividend date, 0 otherwise (28 payments in the window) & Dividend yield $q$; dividend-growth feature \\
+stock\_splits & float & Split ratio on the split date (none in the window) & Data integrity \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Volatility data: VIX (Yahoo Finance \code{\textasciicircum VIX}; FRED \code{VIXCLS})}
+File \code{data/raw/yahoo\_vix\_daily.csv} has the same columns as the JPM file; only \code{close} is meaningful.
+FRED \code{VIXCLS} is collected as an independent check: the two sources agree to within 0.01 on 1,759 of 1,761 days
+(largest gap 0.11).
+
+\subsection{Interest rates and macro data (FRED)}
+Daily series are stored in \code{data/raw/fred\_daily.csv} (2,557 calendar-day rows, because \code{DFF} is published
+seven days a week) and monthly series in \code{data/raw/fred\_monthly.csv} (84 rows). Blank cells are
+non-publication days and are left blank.
+
+\begin{table}[H]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}>{\ttfamily}>{\raggedright\arraybackslash}p{0.16\linewidth}L>{\raggedright\arraybackslash}>{\raggedright\arraybackslash}p{0.1\linewidth}L@{}}
+\toprule
+\normalfont Series ID & Description & Freq. & Model use \\
+\midrule
+DTB3 & 3-month Treasury bill, secondary market & Daily & Risk-free rate $r$ (short-rate convention) \\
+DGS3MO & 3-month Treasury constant maturity & Daily & $r$, alternative \\
+DGS6MO & 6-month Treasury constant maturity & Daily & $r$ matched to the choice date $T_1 = 0.5$~y \\
+DGS1 & 1-year Treasury constant maturity & Daily & $r$ matched to expiry $T_2 = 1$~y (\textbf{default}) \\
+DGS2, DGS10 & 2- and 10-year Treasury constant maturity & Daily & Yield-curve slope; interest-rate momentum feature \\
+DFF & Effective federal funds rate & Daily & Policy regime; FOMC event features \\
+VIXCLS & Cboe VIX close & Daily & Cross-check for \code{\textasciicircum VIX} \\
+CPIAUCSL & CPI, all urban consumers, seasonally adjusted & Monthly & Inflation regime feature \\
+UNRATE & Unemployment rate, seasonally adjusted & Monthly & Macro regime feature \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Alpha Vantage cross-check files}
+\begin{table}[H]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}>{\ttfamily}>{\raggedright\arraybackslash}p{0.3\linewidth}>{\ttfamily}>{\raggedright\arraybackslash}p{0.22\linewidth}rL@{}}
+\toprule
+\normalfont File & \normalfont Endpoint & Rows & Purpose \\
+\midrule
+av\_jpm\_dividends.csv & DIVIDENDS & 28 & Identical ex-dates and amounts to Yahoo (validated) \\
+av\_jpm\_monthly\_adjusted.csv & TIME\_SERIES\_\allowbreak MONTHLY\_\allowbreak ADJUSTED & 84 & Identical to Yahoo's close on all 84 month-ends (validated) \\
+av\_treasury\_3month.csv, av\_treasury\_10year.csv & TREASURY\_YIELD & 1,827 & Identical to FRED \code{DGS3MO}/\code{DGS10} on all 1,750 shared days (validated) \\
+av\_jpm\_daily\_compact.csv & TIME\_SERIES\_DAILY & 100 & Most recent 100 trading days only (free-tier cap); confirms the endpoint works \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% =====================================================================
+\section{Mapping the paper's parameters to data}
+The paper's parameter table~\cite{huang2021} fixes seven inputs. Table~\ref{tab:map} below shows where each comes from in my
+dataset and what the raw data give on the paper's valuation date, 23 August 2021.
+
+\begin{table}[H]
+\centering\small
+\caption{Paper inputs and their data sources.}
+\label{tab:map}
+\begin{tabularx}{\linewidth}{@{}lrLr@{}}
+\toprule
+Parameter & Paper & My source and method & My value \\
+\midrule
+Spot price $S_0$ & \$156.70 & Yahoo JPM unadjusted close on 2021-08-23 & \$156.70 \\
+Volatility $\sigma$ & 28.2\% & Standard deviation of daily log returns, 24 Aug 2020 -- 23 Aug 2021 (252 returns), $\times\sqrt{252}$ & 27.2\% \\
+Dividend yield $q$ & 2.33\% & Trailing 12-month dividends (\$3.60) divided by $S_0$ & 2.30\% \\
+Risk-free rate $r$ & 0.15\% & FRED \code{DGS1} on 2021-08-23 (\code{DTB3} = 0.05\%, \code{DGS6MO} = 0.06\%, \code{DGS2} = 0.23\%) & 0.07\% \\
+Strike $K$ & \$150 & Contract term; set in the Week~3 configuration file & n/a \\
+Choice date $T_1$ & 0.5 y & Contract term & n/a \\
+Expiry $T_2$ & 1 y & Contract term & n/a \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Reproducibility notes.} $S_0$ matches exactly. With 252-day annualization and a one-year window, $\sigma$
+comes out between 26.8\% and 27.7\% across conventions (log or simple returns, adjusted or unadjusted prices, sample
+or population standard deviation, window starts 1 July -- 1 September 2020); none of the 272 conventions I tested gives
+28.2\% (see the Week~1 lab report, \S4.4). The paper's $r = 0.15\%$ matches no Treasury tenor on that date; it lies
+between the 1-year (0.07\%) and 2-year (0.23\%) yields. Week~3 will run the model with both the paper's values and my
+data-derived values and report the difference.
+
+% =====================================================================
+\section{Sentiment data: scope (Planned, Week 2)}
+\label{sec:sentiment}
+\textbf{Target feature:} a daily JPM news-sentiment score scaled to $[0,1]$, plus a market-level sentiment indicator.
+
+\begin{table}[H]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.24\linewidth}L>{\raggedright\arraybackslash}>{\raggedright\arraybackslash}p{0.24\linewidth}@{}}
+\toprule
+Candidate & Coverage and cost & Decision \\
+\midrule
+NewsAPI (brief's suggestion) & Free plan searches articles up to one month old and is limited to development use, so it cannot cover 2018--2024. & Live data for the Week~7 tool only. \\
+Alpha Vantage \code{NEWS\_SENTIMENT} & Premium-only on my key (the call returned ``This is a premium endpoint''). & Not used unless a paid key is provided. \\
+GDELT Global Knowledge Graph 2.0 & Free; covers February 2015 to present, updated every 15 minutes, with document tone scores. Large files that need filtering to JPM-related articles. & Proposed historical source; feasibility check in Week~2. \\
+Finance sentiment model (e.g.\ FinBERT) & Free model; needs a headline archive as input. & Scoring method for whichever headlines are obtained. \\
+Survey proxies: U.~Michigan consumer sentiment (FRED \code{UMCSENT}), AAII investor survey & Free with full history, but monthly or weekly and market-wide rather than JPM-specific. & Fallback market-level feature. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% =====================================================================
+\section{Option price data for benchmarking (Planned, Week 4)}
+\label{sec:options}
+\paragraph{Risk flagged now.} The brief and the paper refer to ``CME'' option prices. JPM single-stock options are
+listed on US equity options exchanges, including Cboe, and cleared by the Options Clearing Corporation (OCC); CME
+Group mainly lists futures and options on futures. Historical end-of-day JPM option prices for 2018--2024 are
+commercial products: OptionMetrics IvyDB US (via WRDS, coverage from 1996) and Cboe DataShop end-of-day files.
+\code{yfinance} returns only the \emph{current} option chain, not history.
+
+\paragraph{Options.}
+\begin{enumerate}[label=(\alph*)]
+  \item Use institutional access to OptionMetrics through WRDS, if available.
+  \item Buy a limited Cboe DataShop extract.
+  \item Start saving daily \code{yfinance} chain snapshots with a scheduled GitHub Action. This gives forward-collected
+        data only, not 2018--2024.
+  \item Because chooser options trade over the counter, traded chooser prices are unlikely to exist; benchmark against
+        the replicating portfolio of listed European calls and puts implied by Rubinstein~\cite{rubinstein1991}.
+\end{enumerate}
+A decision on (a)--(d) is needed before Week~4.
+
+% =====================================================================
+\section{Storage, naming and reproducibility}
+\begin{itemize}
+  \item \textbf{Layout.} \code{data/raw/} holds the immutable source files (committed to Git; about 0.6~MB in
+        total). \code{data/cache/} holds raw Alpha Vantage responses (git-ignored) to save daily quota. Week~2 adds
+        \code{data/processed/} for cleaned files.
+  \item \textbf{Names.} \code{<source>\_<dataset>\_<frequency>.csv}, e.g.\ \code{yahoo\_jpm\_daily.csv}.
+  \item \textbf{Manifest.} Each pull writes \code{data/raw/manifest.json} with the UTC timestamp, the window, row
+        counts and every validation result.
+  \item \textbf{One command.} \code{python -m src.pull\_all} tests all three connections, pulls everything and
+        validates it. All configuration lives in \code{src/data\_sources/config.py}.
+  \item \textbf{Secrets.} API keys live only in a local, git-ignored \code{.env} file, since the repository is
+        public; \code{.env.example} documents the variable names.
+\end{itemize}
+
+% =====================================================================
+\section{Data-quality checks (23 checks, run on every pull)}
+\begin{table}[H]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.2\linewidth}L>{\raggedright\arraybackslash}>{\raggedright\arraybackslash}p{0.25\linewidth}@{}}
+\toprule
+Check & Rule & Week~1 result \\
+\midrule
+Coverage & JPM and VIX have 1,700--1,800 rows spanning the full window, with identical trading calendars & Pass: 1,761 rows each \\
+Anchor to paper & JPM close on 2021-08-23 within \$0.05 of \$156.70 & Pass: \$156.70 \\
+Price sanity & All JPM closes positive and present; VIX between 5 and 100 & Pass: VIX 9.15--82.69 \\
+Dividends & 26--29 quarterly payments; Alpha Vantage ex-dates and amounts identical to Yahoo's & Pass: 28/28, max diff \$0.000 \\
+Cross-source prices & Alpha Vantage month-end close within \$0.02 of Yahoo's close & Pass: 84/84, max diff \$0.000 \\
+Cross-source yields & Alpha Vantage 3-month and 10-year yields within 0.005~pt of FRED on $\ge$99\% of days & Pass: 1,750/1,750 each \\
+Cross-source VIX & Yahoo VIX within 0.01 of FRED \code{VIXCLS} on $\ge$99.5\% of days & Pass: 99.9\% \\
+Rate completeness & Each FRED daily series blank on $<$5\% of weekdays (blanks are market holidays) & Pass: 77 of 1,827 weekdays (4.2\%) \\
+Macro completeness & 84 monthly observations & Pass: 84 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% =====================================================================
+\section{Open decisions}
+\begin{enumerate}
+  \item Option-price source for Week~4 (\S\ref{sec:options}). This is the largest dependency in the project.
+  \item Historical sentiment source: GDELT feasibility versus survey proxies (\S\ref{sec:sentiment}).
+  \item Risk-free tenor convention: \code{DGS1} (matches $T_2$) by default; Week~3 runs a sensitivity check against
+        the paper's 0.15\%.
+\end{enumerate}
+
+% =====================================================================
+\begin{thebibliography}{9}\small
+\bibitem{huang2021} Z.~Huang, X.~Wang and W.~Wan. Exploration of JPMorgan chooser option pricing.
+  \emph{BCP Business \& Management}, 15:93--102, 2021.
+\bibitem{rubinstein1991} M.~Rubinstein. Chooser options. 1991. (As cited in the project brief.)
+\end{thebibliography}
+
+\end{document}

@@ -23,8 +23,8 @@ pip install -r requirements.txt
 cp .env.example .env            # add free FRED and Alpha Vantage API keys
 python -m src.pull_all          # test APIs, pull 2018-2024 raw data, run 23 validation checks
 python -m src.week1_figures     # Week 1 figures and summary stats
-tectonic -X compile deliverables/week1/lab_report.tex        # rebuild the lab report (LaTeX; brew install tectonic)
-python -m src.build_pdf deliverables/week1/data_specification.html   # rebuild the spec (needs Google Chrome)
+tectonic -X compile deliverables/week1/lab_report.tex           # rebuild a PDF (LaTeX; brew install tectonic)
+tectonic -X compile deliverables/week1/data_specification.tex
 ```
 
 Test a single connection: `python -m src.data_sources.yahoo`, `... .fred` or `... .alpha_vantage`.
@@ -35,7 +35,7 @@ Test a single connection: `python -m src.data_sources.yahoo`, `... .fred` or `..
 src/data_sources/   API connection modules (Yahoo Finance, FRED, Alpha Vantage) + config.py
 src/pull_all.py     one-command pull + validation, writes data/raw/manifest.json
 data/raw/           raw source files, saved as received (no cleaning)
-deliverables/       weekly PDFs, their LaTeX/HTML sources and figures
+deliverables/       weekly PDFs, their LaTeX sources and figures
 ```
 
 API keys live only in `.env`, which is gitignored. Never commit it.

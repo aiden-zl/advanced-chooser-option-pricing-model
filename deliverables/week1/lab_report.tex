@@ -249,27 +249,24 @@ correlation of $-0.57$. A single $\sigma = 28.2\%$ cannot capture these regimes.
 \begin{figure}[H]
 \centering
 \includegraphics[width=\linewidth]{fig2_vix.png}
-\caption{VIX daily close. Median 18.0; peak 82.7 on 16 March 2020. Other spikes above 35 occur in February 2018
-(37.3), December 2018 (36.1) and August 2024 (38.6); the March 2023 regional-bank stress shows only a modest rise,
-to 26.5.}
+\caption{VIX daily close from Yahoo Finance. Data check: values stay in a plausible range (9.15 to 82.69), there
+are no gaps, and the March 2020 spike appears where expected. Yahoo matches FRED's \code{VIXCLS} on 1,759 of 1,761 days.}
 \label{fig:vix}
 \end{figure}
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\linewidth]{fig3_rates.png}
-\caption{US interest rates moved through three regimes: about 1.5\%--2.5\% (2018--19), near zero (March 2020 to
-early 2022) and above 5\% after the 2022--23 hiking cycle. The paper's valuation date falls in the near-zero regime,
-so $r$ carries little weight there; at 2023--24 rates it becomes a much larger input.}
+\caption{Interest-rate series from FRED. Data check: all five series are in percent per year, have no gaps beyond
+bond-market holidays, and show the known rate cuts in March 2020 and rate hikes from 2022.}
 \label{fig:rates}
 \end{figure}
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\linewidth]{fig5_dividends.png}
-\caption{JPM paid 28 quarterly dividends, rising from \$0.56 to \$1.25 per share; Yahoo and Alpha Vantage agree on
-every ex-date and amount. A rising dividend argues for a time-varying $q$ and feeds the Week~2 dividend-growth
-feature.}
+\caption{JPM quarterly dividends per share from Yahoo Finance. Data check: 28 payments, one per quarter, with no
+missing quarters; Alpha Vantage reports the same 28 ex-dates and amounts.}
 \label{fig:div}
 \end{figure}
 

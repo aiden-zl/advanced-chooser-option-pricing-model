@@ -1,0 +1,100 @@
+{
+  "pulled_at_utc": "2026-11-26T05:20:46+00:00",
+  "warmup_window": [
+    "2015-07-01",
+    "2017-12-31"
+  ],
+  "study_window": [
+    "2018-01-01",
+    "2024-12-31"
+  ],
+  "files": {
+    "warmup/yahoo_jpm_daily_warmup.csv": 631,
+    "warmup/yahoo_vix_daily_warmup.csv": 631,
+    "warmup/fred_daily_warmup.csv": 915,
+    "fred_monthly_first_release.csv": 360,
+    "fred_umcsent_history.csv": 444,
+    "gdelt_jpm_tone_daily.csv": 2918
+  },
+  "validation": {
+    "checks": [
+      {
+        "check": "JPM warm-up joins Week 1 file without gap or overlap",
+        "passed": true,
+        "detail": "warm-up ends 2017-12-29, Week 1 starts 2018-01-02 (4 days)"
+      },
+      {
+        "check": "JPM close continuous across the join (<10% move)",
+        "passed": true,
+        "detail": "0.94%"
+      },
+      {
+        "check": "JPM warm-up has ~630 trading days",
+        "passed": true,
+        "detail": "631 rows"
+      },
+      {
+        "check": "VIX warm-up joins Week 1 file without gap or overlap",
+        "passed": true,
+        "detail": "warm-up ends 2017-12-29, Week 1 starts 2018-01-02 (4 days)"
+      },
+      {
+        "check": "VIX warm-up has ~630 trading days",
+        "passed": true,
+        "detail": "631 rows"
+      },
+      {
+        "check": "Warm-up Yahoo VIX agrees with FRED VIXCLS on >=99.5% of days",
+        "passed": true,
+        "detail": "100.0% of 631 days"
+      },
+      {
+        "check": "CPIAUCSL first releases cover every month 2015-2024 (120)",
+        "passed": true,
+        "detail": "120 months; publication lag 37-56 days after month start"
+      },
+      {
+        "check": "CPIAUCSL never published before its reference month",
+        "passed": true,
+        "detail": "min lag 37 days"
+      },
+      {
+        "check": "UNRATE first releases cover every month 2015-2024 (120)",
+        "passed": true,
+        "detail": "120 months; publication lag 31-40 days after month start"
+      },
+      {
+        "check": "UNRATE never published before its reference month",
+        "passed": true,
+        "detail": "min lag 31 days"
+      },
+      {
+        "check": "UMCSENT first releases cover every month 2015-2024 (120)",
+        "passed": true,
+        "detail": "120 months; publication lag 19-57 days after month start"
+      },
+      {
+        "check": "UMCSENT never published before its reference month",
+        "passed": true,
+        "detail": "min lag 19 days"
+      },
+      {
+        "check": "GDELT covers >=99.8% of calendar days 2017-2024 (source outages listed)",
+        "passed": true,
+        "detail": "2918 of 2922 days; missing: 2017-12-01, 2017-12-02, 2020-10-20, 2023-03-23"
+      },
+      {
+        "check": "GDELT has at least 1 article every day",
+        "passed": true,
+        "detail": "min 3 articles/day"
+      },
+      {
+        "check": "GDELT tone within plausible range (-20, +20)",
+        "passed": true,
+        "detail": "-4.50 to 2.69"
+      }
+    ],
+    "passed": 15,
+    "total": 15
+  }
+}

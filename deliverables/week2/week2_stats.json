@@ -19,5 +19,18 @@
   "anchorr": "0.06",
   "sentnewsmean": "0.56",
   "sentconsmean": "0.38",
-  "datasethash": "421e8da279fe6b5d"
+  "datasethash": "421e8da279fe6b5d",
+  "maxcorr": "0.996",
+  "maxcorrpair": "\\texttt{r\\_6m} and \\texttt{r\\_3m}",
+  "flagsonefiveshare": "5.3",
+  "weeklymatched": 365,
+  "reversalsconfirmed": 2,
+  "gapmeandiffdgsone": "0.014",
+  "gapmaxdiffdgsone": "0.045",
+  "gdeltdays": 2918,
+  "gdeltarticlesmedian": 321,
+  "tonetwentyfour": "+0.91",
+  "toneprevmax": "+0.05",
+  "anchorrsameday": "0.07",
+  "warmuprows": 631
 }

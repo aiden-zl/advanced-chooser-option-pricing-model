@@ -142,6 +142,23 @@ def main() -> None:
         "sentnewsmean": f"{df.sent_news.mean():.2f}", "sentconsmean": f"{df.sent_consumer.mean():.2f}",
         "datasethash": frame_hash(df),
     }
+    feats = list(FEATURES)
+    cm = df[feats].corr().abs().where(~np.eye(len(feats), dtype=bool)).stack().sort_values(ascending=False)
+    (fa, fb), top = cm.index[0], cm.iloc[0]
+    tone = raw.gdelt.tone
+    by_year = tone.groupby(tone.index.year).mean()
+    stats.update({
+        "maxcorr": f"{top:.3f}", "maxcorrpair": f"\\texttt{{{fa}}} and \\texttt{{{fb}}}".replace("_", "\\_"),
+        "flagsonefiveshare": f"{outliers['k1.5']['share']*100:.1f}",
+        "weeklymatched": outliers["weekly_crosscheck"]["matched"],
+        "reversalsconfirmed": outliers["spike_reversals_confirmed_by_vix"],
+        "gapmeandiffdgsone": f"{gaps['DGS1']['mean_abs_diff_ffill_vs_linear_pp']:.3f}",
+        "gapmaxdiffdgsone": f"{gaps['DGS1']['max_abs_diff_ffill_vs_linear_pp']:.3f}",
+        "gdeltdays": len(raw.gdelt), "gdeltarticlesmedian": int(raw.gdelt.articles.median()),
+        "tonetwentyfour": f"{by_year.loc[2024]:+.2f}", "toneprevmax": f"{by_year.loc[:2023].max():+.2f}",
+        "anchorrsameday": f"{pd.read_csv(RAW_DIR / 'fred_daily.csv', index_col='date', parse_dates=True).loc[t, 'DGS1']:.2f}",
+        "warmuprows": int((raw.jpm.index < START_DATE).sum()),
+    })
     (DOC_DIR / "week2_numbers.tex").write_text(numbers_tex(stats))
     (DOC_DIR / "week2_stats.json").write_text(json.dumps(stats, indent=2))
     print(f"Wrote {PARQUET.relative_to(ROOT)}, {CSV.relative_to(ROOT)} and logs; hash {frame_hash(df)}")

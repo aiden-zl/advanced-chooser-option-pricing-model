@@ -104,14 +104,14 @@ def fig_vol(df):
 
 
 def fig_sentiment(df):
-    fig, ax = plt.subplots(figsize=(8, 3.4))
-    ax.plot(df.index, df.sent_news, color=C[0], lw=0.7, alpha=0.9, label="News sentiment (GDELT, daily)")
+    fig, ax = plt.subplots(figsize=(8, 3.8))
+    ax.plot(df.index, df.sent_news, color=C[0], lw=0.6, alpha=0.85, label="News sentiment (GDELT, daily)")
     ax.plot(df.index, df.sent_consumer, color=C[1], lw=1.8, label="Consumer sentiment (U. Michigan, monthly)")
     ax.axhline(0.5, color=INK2, lw=0.8, ls=":")
     ax.set_ylim(0, 1)
     ax.set_ylabel("Score (0 = most negative, 1 = most positive)")
     ax.set_title("Sentiment features scaled to [0, 1]")
-    ax.legend(loc="lower left", fontsize=8, ncol=2)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.1), fontsize=8, ncol=2)
     _years(ax)
     _save(fig, "fig4_sentiment.png", "GDELT DOC API; FRED/ALFRED UMCSENT first releases")
 

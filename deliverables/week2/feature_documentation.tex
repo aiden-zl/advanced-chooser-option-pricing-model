@@ -1,0 +1,251 @@
+\documentclass[11pt]{article}
+
+% ---------- Packages (same preamble as Week 1) ----------
+\usepackage[letterpaper,margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{newtxtext,newtxmath}
+\usepackage{microtype}
+\usepackage{amsmath}
+\usepackage{booktabs,tabularx,array,longtable}
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+
+\setlist{itemsep=2pt, topsep=4pt}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\newcommand{\code}[1]{\texttt{#1}}
+\renewcommand{\arraystretch}{1.15}
+\input{week2_numbers.tex}
+
+% ---------- Title ----------
+\title{\textbf{Feature Engineering Documentation: Cleaned Daily Dataset for JPM Chooser Option Pricing}\\[4pt]
+\large Week 2 Deliverable: Feature Engineering Documentation (v1.0)}
+\author{Aiden Leong\\[2pt]
+\small Goldman Sachs Online Internship, Quantitative Research \& Trading\\
+\small Supervisor: Tyler Chan\\
+\small \url{https://github.com/aiden-zl/advanced-chooser-option-pricing-model}}
+\date{25 November 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+This document describes the cleaned, feature-engineered dataset produced in Week~2: how each raw series is aligned to
+the trading calendar, how missing values and outliers are handled, and the exact definition of each of the
+\wFeatures{} features. Every feature is \emph{point-in-time}: its value on trading day $t$ uses only information that
+was public by the close of day $t$, which prevents look-ahead bias in the machine-learning models of Weeks~5--6. The
+dataset has \wRows{} rows (one per NYSE trading day, 2018--2024) and no blank values.
+\end{abstract}
+
+% =====================================================================
+\section{Dataset overview}
+\begin{table}[H]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.27\linewidth}L@{}}
+\toprule
+Item & Specification \\
+\midrule
+Main file & \code{data/processed/features\_daily.parquet} (identical copy: \code{features\_daily.csv}) \\
+Rows & \wRows{} NYSE trading days, 2018-01-02 to 2024-12-31 (same calendar as the Week~1 raw data) \\
+Columns & \code{close} (the spot price $S_t$, kept for pricing) plus \wFeatures{} features \\
+Blank values & 0 \\
+Supporting files & \code{feature\_dictionary.json} (definitions), \code{cleaning\_log.json} (gap counts, outlier screen, checks), \code{outlier\_flags.csv} \\
+How to load & \code{pd.read\_parquet("data/processed/features\_daily.parquet")} \\
+How to rebuild & \code{python -m src.pipeline.run} (offline; no API keys needed) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% =====================================================================
+\section{Point-in-time rules}
+\label{sec:pit}
+A model trained on data that was not yet known on a given day would look better in testing than it could ever
+perform live. This is called \emph{look-ahead bias}. To avoid it, each source enters the dataset only from the day it
+was actually public (Table~\ref{tab:pit}).
+
+\begin{table}[H]
+\centering\small
+\caption{When each source becomes usable on trading day $t$.}
+\label{tab:pit}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.26\linewidth}>{\raggedright\arraybackslash}p{0.27\linewidth}L@{}}
+\toprule
+Source & Value used on day $t$ & Reason \\
+\midrule
+JPM prices, dividends (Yahoo) & Same day $t$ & Closing prices are known at the close. \\
+VIX close (Yahoo) & Same day $t$ & The VIX settles 15 minutes after the stock close. \\
+Treasury yields, fed funds (FRED) & Latest value dated \emph{before} $t$ & Fed funds is published the next business day, and Treasury yields are posted after the close. \\
+CPI, unemployment, consumer sentiment (ALFRED) & First-published value, from its publication date & Monthly figures appear weeks after the month ends and are later revised; I use the number as first released, on the day it was released. \\
+GDELT news tone & Days \emph{before} $t$ & A GDELT day ends at midnight UTC, after the US close. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% =====================================================================
+\section{Cleaning}
+\subsection{Calendar alignment}
+The master calendar is the NYSE trading calendar taken from the JPM price file. A warm-up history from 1 July 2015
+(\wWarmuprows{} extra trading days, stored separately in \code{data/raw/warmup/}) lets the long-window features,
+such as 252-day volatility and year-on-year growth, have values from the first study day. Warm-up rows are dropped
+from the final dataset.
+
+\subsection{Missing values}
+Within 2018--2024, JPM, VIX and fed funds have no gaps on trading days. Each Treasury series has
+\wGapdaysdgsone{} trading days with no same-day value; these are bond-market holidays when stocks still trade
+(Columbus Day and Veterans Day). GDELT is missing \wGdeltmissing{} calendar days out of \wGdeltdays{}, which are
+outages at the source.
+
+\paragraph{Method: previous-value fill, not linear interpolation.} The brief suggests interpolation. Linear
+interpolation fills a gap using the \emph{next} day's value, which would leak future information. I therefore use the
+last published value, which is also what a trader would actually have on that day. On the \wGapdaysdgsone{} gap days
+for the 1-year yield, the two methods differ by \wGapmeandiffdgsone{} percentage points on average (at most
+\wGapmaxdiffdgsone{}), so the choice has a negligible effect on the values while removing the leak.
+
+\subsection{Outliers}
+I screen JPM daily log returns with the interquartile-range (IQR) rule. With quartiles $Q_1$ and $Q_3$ and
+$\mathrm{IQR} = Q_3 - Q_1$, a return is flagged if it falls outside
+\begin{equation}
+  \bigl[\,Q_1 - k\cdot\mathrm{IQR},\; Q_3 + k\cdot\mathrm{IQR}\,\bigr], \qquad k \in \{1.5,\ 3\}.
+\end{equation}
+\emph{In words: a return is unusual if it lies far outside the range where the middle half of all returns fall.}
+The fences are $[\wIqrlower,\ \wIqrupper]$ for $k=1.5$, which flags \wFlagsonefive{} days (\wFlagsonefiveshare\%), and
+\wFlagsthree{} days fall outside the wider $k=3$ fence.
+
+\paragraph{Decision: flag, verify, keep.} Large returns in equity data are usually real, and deleting them would hide
+exactly the high-volatility periods the project studies. Three checks confirm the flagged days are genuine:
+\begin{enumerate}
+  \item \textbf{Independent prices.} Alpha Vantage weekly closes match Yahoo's daily closes in all \wWeeklymatched{}
+        weeks of 2018--2024.
+  \item \textbf{Market confirmation.} On \wFlagsthreeoppvix{} of the \wFlagsthree{} extreme days the VIX moved in
+        the opposite direction to JPM (fear rising on down days), which a data error would not produce.
+  \item \textbf{Bad-tick test.} A data error typically shows as a one-day spike that fully reverses the next day.
+        \wReversals{} days match that pattern (13 and 26 March 2020); both are confirmed by opposite VIX moves on both
+        days and by the Alpha Vantage weekly closes, so they are real COVID-19 swings.
+\end{enumerate}
+No values are removed or changed. The flags are saved in \code{outlier\_flags.csv} rather than used as a feature,
+because the fences are computed from the whole sample.
+
+\subsection{Structural checks}
+No duplicate dates, no non-positive prices, no rows where the close lies outside the day's high--low range, no
+zero-volume days, and identical JPM and VIX calendars.
+
+% =====================================================================
+\section{Feature catalogue}
+Throughout, $S_t$ is the JPM close, $H_t$ and $L_t$ the daily high and low, and $r_t=\ln(S_t/S_{t-1})$ the daily log
+return. Rates are in decimals ($0.05 = 5\%$).
+
+\subsection{Returns and volatility}
+\begin{align}
+  \sigma^{(n)}_t &= \sqrt{252}\;\operatorname{std}\bigl(r_{t-n+1},\dots,r_t\bigr), \qquad n \in \{21, 63, 252\}, \label{eq:rv}\\
+  \sigma^{\mathrm{P}}_t &= \sqrt{\frac{252}{4\ln 2}\cdot\frac{1}{21}\sum_{i=0}^{20}\Bigl(\ln\frac{H_{t-i}}{L_{t-i}}\Bigr)^{2}}. \label{eq:park}
+\end{align}
+\emph{In words:} \eqref{eq:rv} measures how much the price swung over the last month, quarter or year, scaled to a
+yearly figure; \eqref{eq:park} estimates the same thing from each day's high--low range, which uses more of the
+day's information.
+
+\subsection{Dividends}
+Let $D^{(4)}_t$ be the sum of the last four quarterly dividends with ex-date on or before $t$, and $D^{(4,\text{prev})}_t$
+the sum of the four before those. Then
+\begin{equation}
+  q_t = \frac{D^{(4)}_t}{S_t}, \qquad g_t = \frac{D^{(4)}_t}{D^{(4,\text{prev})}_t} - 1.
+\end{equation}
+\emph{In words:} $q_t$ is the dividend yield the pricing model needs, and $g_t$ is how much the yearly dividend grew.
+Counting payments rather than a 365-day window avoids catching three or five payments when ex-dates shift; the four
+payments in use always span less than 13 months.
+
+\subsection{Market volatility link}
+$\rho_t$ is the 63-day correlation between JPM's daily log returns and the VIX's daily log changes.
+\emph{In words: how closely JPM's moves have been tied to market-wide fear over the last quarter.}
+
+\subsection{Interest rates}
+$r^{1y}_t$ is the 1-year Treasury yield (the model's $r$). Rate momentum is its change over $m$ trading days,
+\begin{equation}
+  \Delta^{(m)}_t = r^{1y}_t - r^{1y}_{t-m}, \qquad m \in \{21, 63\},
+\end{equation}
+\emph{in words: whether rates have been rising or falling over the last month or quarter.} The yield-curve slope is the
+10-year minus the 3-month yield.
+
+\subsection{Sentiment, scaled to $[0,1]$}
+Both sentiment features are converted to a score between 0 and 1 with an \emph{expanding} percentile: the value on a
+given day is the share of all earlier values (including that day) that it is greater than or equal to,
+\begin{equation}
+  p_t = \frac{1}{t}\sum_{s \le t} \mathbf{1}\{x_s \le x_t\}.
+\end{equation}
+\emph{In words: 0.9 means today is more positive than 90\% of everything seen so far.} Only past values are used, so
+the score never depends on the future.
+\begin{itemize}
+  \item \textbf{News sentiment} (\code{sent\_news}): $x$ is the 5-day average of GDELT's daily tone for articles
+        mentioning ``JPMorgan'' (median \wGdeltarticlesmedian{} articles per day), history from January 2017.
+  \item \textbf{Consumer sentiment} (\code{sent\_consumer}): $x$ is the University of Michigan index, ranked against
+        all monthly readings since 1978 that were published by that day.
+\end{itemize}
+
+\subsection{Full list}
+\begin{longtable}{@{}>{\ttfamily\raggedright\arraybackslash}p{0.2\linewidth}>{\raggedright\arraybackslash}p{0.40\linewidth}>{\raggedright\arraybackslash}p{0.17\linewidth}>{\raggedright\arraybackslash}p{0.12\linewidth}@{}}
+\caption{The \wFeatures{} features.}\label{tab:features}\\
+\toprule
+\normalfont Feature & Definition & Source & Unit \\
+\midrule
+\endfirsthead
+\toprule
+\normalfont Feature & Definition & Source & Unit \\
+\midrule
+\endhead
+ret\_1d & $\ln(S_t/S_{t-1})$ & Yahoo & log return \\
+rv\_21 & eq.~\eqref{eq:rv}, $n=21$ & Yahoo & annual, decimal \\
+rv\_63 & eq.~\eqref{eq:rv}, $n=63$ & Yahoo & annual, decimal \\
+rv\_252 & eq.~\eqref{eq:rv}, $n=252$ & Yahoo & annual, decimal \\
+park\_21 & eq.~\eqref{eq:park}, Parkinson high--low estimator & Yahoo & annual, decimal \\
+volume\_ratio\_21 & volume today / average volume of the last 21 days & Yahoo & ratio \\
+div\_ttm & sum of the last 4 dividends & Yahoo & USD/share \\
+div\_yield & $q_t = $ \code{div\_ttm} $/S_t$ & Yahoo & decimal \\
+div\_growth\_yoy & $g_t$, year-on-year dividend growth & Yahoo & decimal \\
+vix & VIX close / 100 & Yahoo & decimal \\
+corr\_jpm\_vix\_63 & $\rho_t$, 63-day JPM--VIX correlation & Yahoo & $[-1,1]$ \\
+r\_3m & 3-month T-bill (\code{DTB3}), previous day & FRED & decimal \\
+r\_6m & 6-month Treasury (\code{DGS6MO}), previous day & FRED & decimal \\
+r\_1y & 1-year Treasury (\code{DGS1}), previous day; the model's $r$ & FRED & decimal \\
+slope\_10y\_3m & \code{DGS10} $-$ \code{DGS3MO}, previous day & FRED & decimal \\
+rate\_mom\_21 & $\Delta^{(21)}_t$, 1-month change in $r^{1y}$ & FRED & decimal \\
+rate\_mom\_63 & $\Delta^{(63)}_t$, 3-month change in $r^{1y}$ & FRED & decimal \\
+fed\_funds & effective fed funds rate (\code{DFF}), previous day & FRED & decimal \\
+cpi\_yoy & latest published CPI / CPI 12 months earlier $-1$ & ALFRED & decimal \\
+unrate & latest published unemployment rate & ALFRED & decimal \\
+sent\_news & expanding percentile of 5-day GDELT JPMorgan tone & GDELT & $[0,1]$ \\
+sent\_consumer & expanding percentile of U.~Michigan sentiment & ALFRED & $[0,1]$ \\
+\bottomrule
+\end{longtable}
+
+% =====================================================================
+\section{Validation}
+The pipeline refuses to write the dataset unless all \wChecks{} checks pass: at least ten features; one row per
+Week~1 trading day; no blanks; every feature within a plausible range; the trailing dividend uses four payments
+spanning under 13 months; the Week~1 anchors on 23 August 2021 ($S_0=\$156.70$, $\sigma=\wAnchorrv\%$,
+$q=\wAnchorq\%$); $r$ equals the previous trading day's raw 1-year yield (\wAnchorr\%; the same-day value quoted in
+Week~1 was \wAnchorrsameday\%); and no two features are duplicates. Separately, an offline test suite
+(\code{python -m pytest}) checks for look-ahead bias by rebuilding the dataset with all data after a cut-off date
+removed and requiring every earlier value to be unchanged, at five cut-off dates.
+
+% =====================================================================
+\section{Notes for the modelling weeks}
+\begin{itemize}
+  \item \textbf{Highly correlated rates.} The short rates move almost together (largest pairwise correlation
+        \wMaxcorr{}, between \wMaxcorrpair). Weeks~5--6 should keep one of them or combine them.
+  \item \textbf{News sentiment in 2024.} GDELT's average JPMorgan tone was \wTonetwentyfour{} in 2024, while the highest
+        earlier yearly average was \wToneprevmax{} (2023), so the expanding percentile sits near 1 for most of 2024. A rolling-window
+        version may suit the models better; this is a Week~5 choice.
+  \item \textbf{First-release inflation.} \code{cpi\_yoy} divides two first-published values; it can differ slightly
+        from inflation computed on today's revised data, by design.
+\end{itemize}
+
+\begin{thebibliography}{9}\small\raggedright
+\bibitem{huang2021} Z.~Huang, X.~Wang and W.~Wan. Exploration of JPMorgan chooser option pricing.
+  \emph{BCP Business \& Management}, 15:93--102, 2021.
+\bibitem{parkinson} M.~Parkinson. The extreme value method for estimating the variance of the rate of return.
+  \emph{Journal of Business}, 53(1):61--65, 1980.
+\bibitem{gdelt} The GDELT Project. GDELT DOC 2.0 API, \url{https://api.gdeltproject.org}. Accessed 25 November 2026.
+\end{thebibliography}
+
+\end{document}

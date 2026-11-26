@@ -79,7 +79,8 @@ Source & Used on day $t$ & Reason \\
 \midrule
 JPM prices and dividends, VIX & Same day & Known at the close (VIX settles 15 minutes later). \\
 Treasury yields, fed funds & Previous trading day & Published after the close or the next business day. \\
-CPI, unemployment, consumer sentiment & First-published value, from its release date & Released weeks after the month and later revised. \\
+CPI, unemployment & First-published value, from its release date & Released weeks after the month and later revised. \\
+Consumer sentiment & First-published value, from the 8th of the next month & Archive dates are sometimes too early (Section~\ref{sec:umcsent}). \\
 GDELT news tone & Previous day & A GDELT day ends at midnight UTC, after the US close. \\
 \bottomrule
 \end{tabularx}
@@ -159,7 +160,7 @@ checks and the test suite, and saves the dataset as a downloadable artifact. The
 \section{Results}
 \subsection{Additional raw data}
 All 16 checks on the new raw files pass: the warm-up files join the Week~1 files without gaps, every month 2015--2024
-has a first release published after its reference month, GDELT covers 99.9\% of days, and the Alpha Vantage weekly
+has a first release dated after the start of its reference month, GDELT covers 99.9\% of days, and the Alpha Vantage weekly
 closes match Yahoo in all \wWeeklymatched{} weeks.
 
 \subsection{Missing values}
@@ -172,8 +173,8 @@ the dataset has no blanks.}
 \label{fig:gaps}
 \end{figure}
 On the \wGapdaysdgsone{} gap days, previous-value fill and linear interpolation differ by \wGapmeandiffdgsone{}
-percentage points on average for the 1-year yield (at most \wGapmaxdiffdgsone{}), so avoiding interpolation costs
-almost nothing.
+percentage points on average for the 1-year yield (at most \wGapmaxdiffdgsone{}); the largest difference in any series is
+\wGapmaxdiffpp{} points, for the 3-month bill. Avoiding interpolation therefore costs little.
 
 \subsection{Outliers}
 \begin{figure}[H]
@@ -186,8 +187,8 @@ almost nothing.
 Three checks show the flagged returns are real rather than data errors. (i) Alpha Vantage's weekly closes match Yahoo in
 all \wWeeklymatched{} weeks. (ii) On \wFlagsthreeoppvix{} of the \wFlagsthree{} extreme days the VIX moved the opposite
 way to JPM, as it does in genuine market stress. (iii) Only \wReversals{} days look like a one-day spike that reverses
-the next day, the usual sign of a bad price; both (13 and 26 March 2020) are confirmed by the VIX and by the weekly
-closes. Removing these days would hide the high-volatility periods the project is about.
+the next day, the usual sign of a bad price; both (13 and 26 March 2020) are confirmed by opposite VIX moves on both days,
+and for 13 March, a Friday, also by the weekly close. Removing these days would hide the high-volatility periods the project is about.
 
 \subsection{The feature dataset}
 \begin{figure}[H]
@@ -231,6 +232,11 @@ of removed.
 \paragraph{Sentiment source.} The Week~1 specification proposed GDELT for historical news sentiment and named survey
 data as a fallback. The feasibility check passed: GDELT's DOC API returns daily JPMorgan tone back to January 2017, so I
 use it for \code{sent\_news} and keep the consumer survey as the market-level \code{sent\_consumer}.
+
+\paragraph{Consumer-sentiment dates.}\label{sec:umcsent} Checking ALFRED's publication dates for consumer sentiment against
+the survey's real releases showed some are too early: January 2018 is dated 26 January, but the final reading was
+published on 2 February. I therefore use each reading only from the 8th of the following month, which delays the feature
+by about one to two weeks but rules out look-ahead. CPI and unemployment dates match the official release days.
 
 \paragraph{Limitations.} GDELT's average JPMorgan tone in 2024 (\wTonetwentyfour{}) was far above any earlier year (the
 highest earlier yearly average was \wToneprevmax{}), so the expanding percentile stays near 1 for most of 2024. The short-term rates are almost

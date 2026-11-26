@@ -77,7 +77,8 @@ Source & Value used on day $t$ & Reason \\
 JPM prices, dividends (Yahoo) & Same day $t$ & Closing prices are known at the close. \\
 VIX close (Yahoo) & Same day $t$ & The VIX settles 15 minutes after the stock close. \\
 Treasury yields, fed funds (FRED) & Latest value dated \emph{before} $t$ & Fed funds is published the next business day, and Treasury yields are posted after the close. \\
-CPI, unemployment, consumer sentiment (ALFRED) & First-published value, from its publication date & Monthly figures appear weeks after the month ends and are later revised; I use the number as first released, on the day it was released. \\
+CPI, unemployment (ALFRED) & First-published value, from its publication date & Monthly figures appear weeks after the month ends and are later revised; I use the number as first released, on the day it was released. \\
+Consumer sentiment (ALFRED) & First-published value, from the 8th of the following month & ALFRED's dates for this series do not always match the survey's release calendar (Section~\ref{sec:umcsent}), so I use a conservative date. \\
 GDELT news tone & Days \emph{before} $t$ & A GDELT day ends at midnight UTC, after the US close. \\
 \bottomrule
 \end{tabularx}
@@ -101,7 +102,8 @@ outages at the source.
 interpolation fills a gap using the \emph{next} day's value, which would leak future information. I therefore use the
 last published value, which is also what a trader would actually have on that day. On the \wGapdaysdgsone{} gap days
 for the 1-year yield, the two methods differ by \wGapmeandiffdgsone{} percentage points on average (at most
-\wGapmaxdiffdgsone{}), so the choice has a negligible effect on the values while removing the leak.
+\wGapmaxdiffdgsone{}); the largest difference in any series is \wGapmaxdiffpp{} points, for the 3-month bill. The
+choice therefore has a small effect on the values while removing the leak.
 
 \subsection{Outliers}
 I screen JPM daily log returns with the interquartile-range (IQR) rule. With quartiles $Q_1$ and $Q_3$ and
@@ -121,8 +123,9 @@ exactly the high-volatility periods the project studies. Three checks confirm th
   \item \textbf{Market confirmation.} On \wFlagsthreeoppvix{} of the \wFlagsthree{} extreme days the VIX moved in
         the opposite direction to JPM (fear rising on down days), which a data error would not produce.
   \item \textbf{Bad-tick test.} A data error typically shows as a one-day spike that fully reverses the next day.
-        \wReversals{} days match that pattern (13 and 26 March 2020); both are confirmed by opposite VIX moves on both
-        days and by the Alpha Vantage weekly closes, so they are real COVID-19 swings.
+        \wReversals{} days match that pattern (13 and 26 March 2020). Both are confirmed by opposite VIX moves on
+        both days. For 13 March, a Friday, the Alpha Vantage weekly close also matches Yahoo exactly; 26 March is a
+        Thursday, and the weekly closes on the Fridays either side match. They are real COVID-19 swings.
 \end{enumerate}
 No values are removed or changed. The flags are saved in \code{outlier\_flags.csv} rather than used as a feature,
 because the fences are computed from the whole sample.
@@ -182,6 +185,13 @@ the score never depends on the future.
         all monthly readings since 1978 that were published by that day.
 \end{itemize}
 
+\paragraph{Consumer-sentiment release dates.}\label{sec:umcsent} I checked ALFRED's first-publication dates for this
+series against the survey's actual releases. January 2018 is dated 26 January, but its final reading (95.7) was
+published on 2 February; March 2018 is dated 27 April, but was published on 29 March. Because a date can be too early,
+I make each reading usable only from the later of ALFRED's date and the 8th of the following month, by which time the
+final reading is always out. This delays the feature by about one to two weeks but guarantees no look-ahead. The CPI
+and unemployment dates match the official release days and are used as given.
+
 \subsection{Full list}
 \begin{longtable}{@{}>{\ttfamily\raggedright\arraybackslash}p{0.2\linewidth}>{\raggedright\arraybackslash}p{0.40\linewidth}>{\raggedright\arraybackslash}p{0.17\linewidth}>{\raggedright\arraybackslash}p{0.12\linewidth}@{}}
 \caption{The \wFeatures{} features.}\label{tab:features}\\
@@ -236,6 +246,8 @@ removed and requiring every earlier value to be unchanged, at five cut-off dates
   \item \textbf{News sentiment in 2024.} GDELT's average JPMorgan tone was \wTonetwentyfour{} in 2024, while the highest
         earlier yearly average was \wToneprevmax{} (2023), so the expanding percentile sits near 1 for most of 2024. A rolling-window
         version may suit the models better; this is a Week~5 choice.
+  \item \textbf{Deferred items from the Week~1 specification.} FOMC-meeting features and a separate 2-year-yield
+        feature are not built this week; they can be added in Week~5 if feature selection calls for them.
   \item \textbf{First-release inflation.} \code{cpi\_yoy} divides two first-published values; it can differ slightly
         from inflation computed on today's revised data, by design.
 \end{itemize}

@@ -24,6 +24,12 @@ from ..data_sources.config import END_DATE, RAW_DIR, START_DATE
 WARMUP_DIR = RAW_DIR / "warmup"
 DAILY_RATES = ["DTB3", "DGS3MO", "DGS6MO", "DGS1", "DGS2", "DGS10", "DFF"]
 IQR_K = (1.5, 3.0)
+# ALFRED's first-vintage dates for UMCSENT do not always match the survey's real release
+# calendar (e.g. January 2018 is dated 26 Jan, but the final 95.7 was published 2 Feb;
+# March 2018 is dated 27 Apr, but was published 29 Mar). The final reading is published by
+# the first days of the following month, so a conservative rule is used for this series:
+# usable from the later of the ALFRED date and the 8th of the following month.
+UMCSENT_SAFE_DAY = 8
 
 
 @dataclass
@@ -48,6 +54,9 @@ def load_raw(cut: str | None = None) -> Raw:
     vix = pd.concat([_read(WARMUP_DIR / "yahoo_vix_daily_warmup.csv"), _read(RAW_DIR / "yahoo_vix_daily.csv")])
     rates = pd.concat([_read(WARMUP_DIR / "fred_daily_warmup.csv"), _read(RAW_DIR / "fred_daily.csv")])[DAILY_RATES]
     monthly = pd.read_csv(RAW_DIR / "fred_monthly_first_release.csv", parse_dates=["ref_month", "available_from"])
+    um = monthly.series == "UMCSENT"
+    safe = monthly.loc[um, "ref_month"] + pd.DateOffset(months=1) + pd.Timedelta(days=UMCSENT_SAFE_DAY - 1)
+    monthly.loc[um, "available_from"] = np.maximum(monthly.loc[um, "available_from"], safe)
     hist = _read(RAW_DIR / "fred_umcsent_history.csv")["UMCSENT"].dropna()
     gdelt = _read(RAW_DIR / "gdelt_jpm_tone_daily.csv")
     if cut is not None:

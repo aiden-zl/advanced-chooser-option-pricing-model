@@ -1,12 +1,12 @@
 {
-  "built_at_utc": "2026-11-26T05:28:25+00:00",
+  "built_at_utc": "2026-11-26T05:37:08+00:00",
   "window": [
     "2018-01-01",
     "2024-12-31"
   ],
   "rows": 1761,
   "features": 22,
-  "dataset_hash": "421e8da279fe6b5d",
+  "dataset_hash": "0b8fef7a964a64ab",
   "price_checks": {
     "jpm": {
       "rows": 2392,

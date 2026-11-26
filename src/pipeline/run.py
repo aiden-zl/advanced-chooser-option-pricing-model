@@ -67,6 +67,9 @@ def validate(df: pd.DataFrame, week1_calendar: pd.DatetimeIndex, div_span_max: f
 
 
 def frame_hash(df: pd.DataFrame) -> str:
+    """Fingerprint of one build. Platform-specific: macOS and Linux math libraries differ in
+    the last bits of log/sqrt (about 1e-14), so cross-platform equality is checked with a
+    tolerance in tests/test_pipeline.py instead."""
     return hashlib.sha256(pd.util.hash_pandas_object(df.round(12), index=True).values.tobytes()).hexdigest()[:16]
 
 

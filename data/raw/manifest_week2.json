@@ -1,5 +1,5 @@
 {
-  "pulled_at_utc": "2026-11-26T05:20:46+00:00",
+  "pulled_at_utc": "2026-11-26T05:24:16+00:00",
   "warmup_window": [
     "2015-07-01",
     "2017-12-31"
@@ -14,7 +14,8 @@
     "warmup/fred_daily_warmup.csv": 915,
     "fred_monthly_first_release.csv": 360,
     "fred_umcsent_history.csv": 444,
-    "gdelt_jpm_tone_daily.csv": 2918
+    "gdelt_jpm_tone_daily.csv": 2918,
+    "av_jpm_weekly.csv": 365
   },
   "validation": {
     "checks": [
@@ -79,6 +80,11 @@
         "detail": "min lag 19 days"
       },
       {
+        "check": "Alpha Vantage weekly closes match Yahoo daily closes (all weeks)",
+        "passed": true,
+        "detail": "365/365 weeks; max diff $0.00001"
+      },
+      {
         "check": "GDELT covers >=99.8% of calendar days 2017-2024 (source outages listed)",
         "passed": true,
         "detail": "2918 of 2922 days; missing: 2017-12-01, 2017-12-02, 2020-10-20, 2023-03-23"
@@ -94,7 +100,7 @@
         "detail": "-4.50 to 2.69"
       }
     ],
-    "passed": 15,
-    "total": 15
+    "passed": 16,
+    "total": 16
   }
 }

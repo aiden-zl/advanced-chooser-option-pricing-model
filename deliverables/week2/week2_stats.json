@@ -1,0 +1,23 @@
+{
+  "rows": 1761,
+  "features": 22,
+  "checks": 10,
+  "gapdaysdgsone": 13,
+  "gapdaysdff": 0,
+  "gapmaxdiffpp": 0.165,
+  "gaptotal": 78,
+  "iqrlower": "-0.0333",
+  "iqrupper": "0.0345",
+  "flagsonefive": 93,
+  "flagsthree": 21,
+  "flagsthreecovid": 13,
+  "flagsthreeoppvix": 18,
+  "reversals": 2,
+  "gdeltmissing": 4,
+  "anchorrv": "27.2",
+  "anchorq": "2.30",
+  "anchorr": "0.06",
+  "sentnewsmean": "0.56",
+  "sentconsmean": "0.38",
+  "datasethash": "421e8da279fe6b5d"
+}

@@ -10,17 +10,19 @@
    the sentiment score to [0, 1] with an expanding window.
 4. GDELT daily JPMorgan news tone and article volume, 2017-2024.
 
-Usage:  python -m src.pull_week2
+Usage:  python -m src.pull_week2             # fetch only files that don't exist yet
+        python -m src.pull_week2 --refresh   # re-download everything (overwrites raw files)
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 from datetime import datetime, timezone
 
 import pandas as pd
 
-from .data_sources import fred, gdelt, yahoo
+from .data_sources import alpha_vantage, fred, gdelt, yahoo
 from .data_sources.config import END_DATE, FRED_SERIES, RAW_DIR, START_DATE, YAHOO_TICKERS
 
 WARMUP_START = "2015-07-01"
@@ -66,6 +68,19 @@ def pull_first_releases() -> dict[str, int]:
     return {"fred_monthly_first_release.csv": len(out), "fred_umcsent_history.csv": len(hist)}
 
 
+def pull_av_weekly() -> dict[str, int]:
+    """Alpha Vantage weekly JPM closes (free, full history): independent check of the
+    Yahoo daily closes, used to confirm that extreme returns are not data errors."""
+    data = alpha_vantage.query("TIME_SERIES_WEEKLY", {"symbol": "JPM"}, cache_name="jpm_weekly")
+    df = pd.DataFrame.from_dict(data["Weekly Time Series"], orient="index").astype(float)
+    df.columns = [c.split(". ", 1)[1] for c in df.columns]
+    df.index = pd.to_datetime(df.index)
+    df.index.name = "date"
+    df = df.sort_index().loc[START_DATE:END_DATE]
+    df.to_csv(RAW_DIR / "av_jpm_weekly.csv")
+    return {"av_jpm_weekly.csv": len(df)}
+
+
 def validate() -> dict:
     checks = []
 
@@ -99,6 +114,13 @@ def validate() -> dict:
             f"{len(s)} months; publication lag {lag.min()}-{lag.max()} days after month start")
         add(f"{sid} never published before its reference month", (lag > 0).all(), f"min lag {lag.min()} days")
 
+    wk = pd.read_csv(RAW_DIR / "av_jpm_weekly.csv", index_col="date", parse_dates=True)["close"]
+    yj = pd.read_csv(RAW_DIR / "yahoo_jpm_daily.csv", index_col="date", parse_dates=True)["close"]
+    both = wk.index.intersection(yj.index)
+    d = (wk.loc[both] - yj.loc[both]).abs()
+    add("Alpha Vantage weekly closes match Yahoo daily closes (all weeks)",
+        len(both) == len(wk) and d.max() < 0.01, f"{len(both)}/{len(wk)} weeks; max diff ${d.max():.5f}")
+
     g = pd.read_csv(RAW_DIR / "gdelt_jpm_tone_daily.csv", index_col="date", parse_dates=True)
     full = pd.date_range("2017-01-01", END_DATE, freq="D")
     missing = full.difference(g.index)
@@ -112,11 +134,27 @@ def validate() -> dict:
 
 
 def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--refresh", action="store_true", help="overwrite existing raw files")
+    args = ap.parse_args()
+    # Raw files are immutable once committed: Yahoo silently revises adjusted closes,
+    # so re-downloading would rewrite history. Only missing files are fetched by default.
+    steps = [
+        (pull_warmup, [WARMUP_DIR / "yahoo_jpm_daily_warmup.csv", WARMUP_DIR / "yahoo_vix_daily_warmup.csv",
+                       WARMUP_DIR / "fred_daily_warmup.csv"]),
+        (pull_first_releases, [RAW_DIR / "fred_monthly_first_release.csv", RAW_DIR / "fred_umcsent_history.csv"]),
+        (gdelt.pull, [RAW_DIR / "gdelt_jpm_tone_daily.csv"]),
+        (pull_av_weekly, [RAW_DIR / "av_jpm_weekly.csv"]),
+    ]
     counts = {}
     print("== Week 2 raw additions ==")
-    counts.update(pull_warmup())
-    counts.update(pull_first_releases())
-    counts.update(gdelt.pull())
+    for fn, outputs in steps:
+        if args.refresh or not all(p.exists() for p in outputs):
+            counts.update(fn())
+        else:
+            for p in outputs:
+                counts[str(p.relative_to(RAW_DIR))] = sum(1 for _ in open(p)) - 1
+            print(f"  (kept existing) {', '.join(p.name for p in outputs)}")
     for k, v in counts.items():
         print(f"  {k:<42} {v:>6} rows")
     res = validate()

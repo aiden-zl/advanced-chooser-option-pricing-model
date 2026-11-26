@@ -1,8 +1,11 @@
-pandas>=3.0
-numpy>=2.0
-yfinance>=1.0
-fredapi>=0.5
-requests>=2.32
-python-dotenv>=1.0
-matplotlib>=3.10
-scipy>=1.14
+# Exact versions used to build the Week 1-2 results (Python 3.14).
+pandas==3.1.1
+numpy==2.5.5
+yfinance==1.8.0
+fredapi==0.5.2
+requests==2.34.2
+python-dotenv==1.2.4
+matplotlib==3.11.2
+scipy==1.18.1
+pyarrow==26.0.1
+pytest==9.2.0

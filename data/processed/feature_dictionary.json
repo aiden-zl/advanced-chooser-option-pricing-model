@@ -1,0 +1,134 @@
+{
+  "ret_1d": {
+    "group": "Returns",
+    "definition": "ln(S_t / S_{t-1})",
+    "source": "Yahoo JPM close",
+    "unit": "log return"
+  },
+  "rv_21": {
+    "group": "Volatility",
+    "definition": "std of last 21 daily log returns x sqrt(252)",
+    "source": "Yahoo JPM close",
+    "unit": "annualized, decimal"
+  },
+  "rv_63": {
+    "group": "Volatility",
+    "definition": "std of last 63 daily log returns x sqrt(252)",
+    "source": "Yahoo JPM close",
+    "unit": "annualized, decimal"
+  },
+  "rv_252": {
+    "group": "Volatility",
+    "definition": "std of last 252 daily log returns x sqrt(252)",
+    "source": "Yahoo JPM close",
+    "unit": "annualized, decimal"
+  },
+  "park_21": {
+    "group": "Volatility",
+    "definition": "Parkinson range estimator over 21 days: sqrt(252/(4 ln 2) x mean[ln(H/L)^2])",
+    "source": "Yahoo JPM high/low",
+    "unit": "annualized, decimal"
+  },
+  "volume_ratio_21": {
+    "group": "Liquidity",
+    "definition": "volume_t / mean volume of last 21 days",
+    "source": "Yahoo JPM volume",
+    "unit": "ratio"
+  },
+  "div_ttm": {
+    "group": "Dividends",
+    "definition": "sum of the last 4 quarterly dividends (ex-date <= t)",
+    "source": "Yahoo JPM dividends",
+    "unit": "USD per share"
+  },
+  "div_yield": {
+    "group": "Dividends",
+    "definition": "div_ttm / S_t  (the model's q)",
+    "source": "Yahoo JPM",
+    "unit": "decimal"
+  },
+  "div_growth_yoy": {
+    "group": "Dividends",
+    "definition": "div_ttm / (sum of the 4 dividends before those) - 1",
+    "source": "Yahoo JPM dividends",
+    "unit": "decimal"
+  },
+  "vix": {
+    "group": "Market volatility",
+    "definition": "VIX close / 100",
+    "source": "Yahoo ^VIX",
+    "unit": "decimal"
+  },
+  "corr_jpm_vix_63": {
+    "group": "Market volatility",
+    "definition": "63-day correlation of JPM log returns with VIX log changes",
+    "source": "Yahoo JPM, ^VIX",
+    "unit": "[-1, 1]"
+  },
+  "r_3m": {
+    "group": "Rates",
+    "definition": "3-month T-bill (DTB3) / 100, previous day",
+    "source": "FRED",
+    "unit": "decimal"
+  },
+  "r_6m": {
+    "group": "Rates",
+    "definition": "6-month Treasury (DGS6MO) / 100, previous day",
+    "source": "FRED",
+    "unit": "decimal"
+  },
+  "r_1y": {
+    "group": "Rates",
+    "definition": "1-year Treasury (DGS1) / 100, previous day (the model's r)",
+    "source": "FRED",
+    "unit": "decimal"
+  },
+  "slope_10y_3m": {
+    "group": "Rates",
+    "definition": "(DGS10 - DGS3MO) / 100, previous day",
+    "source": "FRED",
+    "unit": "decimal"
+  },
+  "rate_mom_21": {
+    "group": "Rates",
+    "definition": "r_1y_t - r_1y_{t-21}: change in the 1-year rate over ~1 month",
+    "source": "FRED",
+    "unit": "decimal"
+  },
+  "rate_mom_63": {
+    "group": "Rates",
+    "definition": "r_1y_t - r_1y_{t-63}: change in the 1-year rate over ~3 months",
+    "source": "FRED",
+    "unit": "decimal"
+  },
+  "fed_funds": {
+    "group": "Rates",
+    "definition": "effective fed funds (DFF) / 100, previous day",
+    "source": "FRED",
+    "unit": "decimal"
+  },
+  "cpi_yoy": {
+    "group": "Macro",
+    "definition": "latest published CPI / CPI 12 months earlier - 1 (first releases)",
+    "source": "FRED/ALFRED CPIAUCSL",
+    "unit": "decimal"
+  },
+  "unrate": {
+    "group": "Macro",
+    "definition": "latest published unemployment rate / 100 (first release)",
+    "source": "FRED/ALFRED UNRATE",
+    "unit": "decimal"
+  },
+  "sent_news": {
+    "group": "Sentiment",
+    "definition": "percentile of 5-day mean GDELT JPMorgan news tone vs all earlier days (expanding), days before t",
+    "source": "GDELT DOC API",
+    "unit": "[0, 1]"
+  },
+  "sent_consumer": {
+    "group": "Sentiment",
+    "definition": "percentile of latest published consumer sentiment vs all earlier releases since 1978 (expanding)",
+    "source": "FRED/ALFRED UMCSENT",
+    "unit": "[0, 1]"
+  }
+}

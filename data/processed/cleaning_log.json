@@ -1,0 +1,157 @@
+{
+  "built_at_utc": "2026-11-26T05:25:03+00:00",
+  "window": [
+    "2018-01-01",
+    "2024-12-31"
+  ],
+  "rows": 1761,
+  "features": 22,
+  "dataset_hash": "421e8da279fe6b5d",
+  "price_checks": {
+    "jpm": {
+      "rows": 2392,
+      "duplicate_dates": 0,
+      "non_positive_prices": 0,
+      "ohlc_inconsistent_rows": 0,
+      "missing_close": 0,
+      "zero_volume_days": 0
+    },
+    "vix": {
+      "rows": 2392,
+      "duplicate_dates": 0,
+      "non_positive_prices": 0,
+      "ohlc_inconsistent_rows": 0,
+      "missing_close": 0
+    },
+    "calendars_identical": true
+  },
+  "fred_gap_days": {
+    "DTB3": {
+      "gap_days": 13,
+      "max_abs_diff_ffill_vs_linear_pp": 0.165,
+      "mean_abs_diff_ffill_vs_linear_pp": 0.0233
+    },
+    "DGS3MO": {
+      "gap_days": 13,
+      "max_abs_diff_ffill_vs_linear_pp": 0.165,
+      "mean_abs_diff_ffill_vs_linear_pp": 0.0213
+    },
+    "DGS6MO": {
+      "gap_days": 13,
+      "max_abs_diff_ffill_vs_linear_pp": 0.06,
+      "mean_abs_diff_ffill_vs_linear_pp": 0.0148
+    },
+    "DGS1": {
+      "gap_days": 13,
+      "max_abs_diff_ffill_vs_linear_pp": 0.045,
+      "mean_abs_diff_ffill_vs_linear_pp": 0.0144
+    },
+    "DGS2": {
+      "gap_days": 13,
+      "max_abs_diff_ffill_vs_linear_pp": 0.09,
+      "mean_abs_diff_ffill_vs_linear_pp": 0.0212
+    },
+    "DGS10": {
+      "gap_days": 13,
+      "max_abs_diff_ffill_vs_linear_pp": 0.0975,
+      "mean_abs_diff_ffill_vs_linear_pp": 0.0352
+    },
+    "DFF": {
+      "gap_days": 0,
+      "max_abs_diff_ffill_vs_linear_pp": 0.0,
+      "mean_abs_diff_ffill_vs_linear_pp": 0.0
+    }
+  },
+  "gdelt_missing_days": [
+    "2017-12-01",
+    "2017-12-02",
+    "2020-10-20",
+    "2023-03-23"
+  ],
+  "outliers": {
+    "q1": -0.007914148863062742,
+    "q3": 0.009041613711779917,
+    "iqr": 0.01695576257484266,
+    "k1.5": {
+      "lower": -0.03334779272532673,
+      "upper": 0.034475257574043905,
+      "flagged_days": 93,
+      "share": 0.05281090289608177
+    },
+    "k3.0": {
+      "lower": -0.05878143658759072,
+      "upper": 0.05990890143630789,
+      "flagged_days": 21,
+      "share": 0.01192504258943782
+    },
+    "spike_reversal_days": [
+      "2020-03-13",
+      "2020-03-26"
+    ],
+    "k3_flags_in_covid_window": 13,
+    "k3_flags_with_opposite_vix_move": 18,
+    "weekly_crosscheck": {
+      "weeks": 365,
+      "matched": 365,
+      "max_abs_diff_usd": 7.32421875682121e-06
+    },
+    "spike_reversals_confirmed_by_vix": 2,
+    "decision": "keep all: flagged returns are genuine market moves, not data errors"
+  },
+  "validation": {
+    "checks": [
+      {
+        "check": "At least 10 features",
+        "passed": true,
+        "detail": "22 features"
+      },
+      {
+        "check": "One row per NYSE trading day, same calendar as Week 1",
+        "passed": true,
+        "detail": "1761 rows"
+      },
+      {
+        "check": "No blank values in any feature on any day",
+        "passed": true,
+        "detail": "0 blanks"
+      },
+      {
+        "check": "Every feature inside its plausible range",
+        "passed": true,
+        "detail": "all in range"
+      },
+      {
+        "check": "Trailing dividend uses 4 payments spanning < 13 months",
+        "passed": true,
+        "detail": "max span 277 days"
+      },
+      {
+        "check": "Week 1 anchor: S0 = $156.70 on 2021-08-23",
+        "passed": true,
+        "detail": "156.70"
+      },
+      {
+        "check": "Week 1 anchor: 1-year volatility = 27.2%",
+        "passed": true,
+        "detail": "0.2722"
+      },
+      {
+        "check": "Week 1 anchor: dividend yield = 2.30%",
+        "passed": true,
+        "detail": "0.0230"
+      },
+      {
+        "check": "Anchor: r on 2021-08-23 equals raw DGS1 of the previous trading day",
+        "passed": true,
+        "detail": "0.0006 = DGS1 on 2021-08-20 (same-day value used in Week 1: 0.0007)"
+      },
+      {
+        "check": "No two features are duplicates (|corr| <= 0.999)",
+        "passed": true,
+        "detail": "none"
+      }
+    ],
+    "passed": 10,
+    "total": 10
+  }
+}

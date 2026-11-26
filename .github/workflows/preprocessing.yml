@@ -1,0 +1,59 @@
+name: Week 2 preprocessing pipeline
+
+# Rebuilds the cleaned feature dataset from the committed raw files and runs the
+# offline test suite. Needs no API keys: raw data are immutable and committed, so a
+# scheduled run proves the pipeline still reproduces the committed dataset exactly.
+on:
+  schedule:
+    - cron: "0 13 * * 1"   # every Monday 13:00 UTC
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths: ["src/**", "data/raw/**", "tests/**", "requirements.txt", ".github/workflows/preprocessing.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+
+      - name: Install exact dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build and validate features (10 checks)
+        run: python -m src.pipeline.run --check
+
+      - name: Offline tests (look-ahead, anchors, reproducibility)
+        run: python -m pytest -q
+
+      - name: Write dataset and logs
+        run: python -m src.pipeline.run
+
+      - name: Job summary
+        run: |
+          python - <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          log = json.load(open("data/processed/cleaning_log.json"))
+          v = log["validation"]
+          print(f"### Preprocessing: {log['rows']} days x {log['features']} features")
+          print(f"- Validation: {v['passed']}/{v['total']} checks passed")
+          print(f"- Dataset hash: `{log['dataset_hash']}`")
+          EOF
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: features-daily
+          path: |
+            data/processed/features_daily.parquet
+            data/processed/features_daily.csv
+            data/processed/feature_dictionary.json
+            data/processed/cleaning_log.json

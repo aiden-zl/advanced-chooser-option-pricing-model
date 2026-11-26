@@ -134,7 +134,7 @@ zero-volume days, and identical JPM and VIX calendars.
 % =====================================================================
 \section{Feature catalogue}
 Throughout, $S_t$ is the JPM close, $H_t$ and $L_t$ the daily high and low, and $r_t=\ln(S_t/S_{t-1})$ the daily log
-return. Rates are in decimals ($0.05 = 5\%$).
+return. Rates are in decimals ($0.05 = 5\%$); volatilities are annualized (p.a.).
 
 \subsection{Returns and volatility}
 \begin{align}
@@ -194,10 +194,10 @@ the score never depends on the future.
 \midrule
 \endhead
 ret\_1d & $\ln(S_t/S_{t-1})$ & Yahoo & log return \\
-rv\_21 & eq.~\eqref{eq:rv}, $n=21$ & Yahoo & annual, decimal \\
-rv\_63 & eq.~\eqref{eq:rv}, $n=63$ & Yahoo & annual, decimal \\
-rv\_252 & eq.~\eqref{eq:rv}, $n=252$ & Yahoo & annual, decimal \\
-park\_21 & eq.~\eqref{eq:park}, Parkinson high--low estimator & Yahoo & annual, decimal \\
+rv\_21 & eq.~\eqref{eq:rv}, $n=21$ & Yahoo & p.a. \\
+rv\_63 & eq.~\eqref{eq:rv}, $n=63$ & Yahoo & p.a. \\
+rv\_252 & eq.~\eqref{eq:rv}, $n=252$ & Yahoo & p.a. \\
+park\_21 & eq.~\eqref{eq:park}, Parkinson high--low estimator & Yahoo & p.a. \\
 volume\_ratio\_21 & volume today / average volume of the last 21 days & Yahoo & ratio \\
 div\_ttm & sum of the last 4 dividends & Yahoo & USD/share \\
 div\_yield & $q_t = $ \code{div\_ttm} $/S_t$ & Yahoo & decimal \\

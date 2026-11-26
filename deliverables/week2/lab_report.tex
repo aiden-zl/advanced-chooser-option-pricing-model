@@ -47,7 +47,7 @@ which avoids borrowing tomorrow's data at a cost of \wGapmeandiffdgsone{} percen
 flags \wFlagsthree{} extreme return days; three independent checks show they are genuine market moves, so all are
 kept. Following the feasibility check promised in Week~1, the news-sentiment feature uses daily GDELT tone for
 JPMorgan articles, and a second sentiment feature uses the University of Michigan consumer survey. The dataset
-reproduces the Week~1 anchors exactly.
+reproduces the Week~1 spot price, volatility and dividend yield exactly.
 \end{abstract}
 
 % =====================================================================
@@ -232,8 +232,8 @@ of removed.
 data as a fallback. The feasibility check passed: GDELT's DOC API returns daily JPMorgan tone back to January 2017, so I
 use it for \code{sent\_news} and keep the consumer survey as the market-level \code{sent\_consumer}.
 
-\paragraph{Limitations.} GDELT's average JPMorgan tone in 2024 (\wTonetwentyfour{}) was far above any earlier year
-(\wToneprevmax{} at most), so the expanding percentile stays near 1 for most of 2024. The short-term rates are almost
+\paragraph{Limitations.} GDELT's average JPMorgan tone in 2024 (\wTonetwentyfour{}) was far above any earlier year (the
+highest earlier yearly average was \wToneprevmax{}), so the expanding percentile stays near 1 for most of 2024. The short-term rates are almost
 perfectly correlated with each other. Both are noted for the feature-selection step in Week~5.
 
 % =====================================================================
